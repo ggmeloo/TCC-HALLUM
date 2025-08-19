@@ -23,6 +23,8 @@ public class LoopCorredor : MonoBehaviour
                     rb.MovePosition(destinoDoLoop.position);
                     rb.MoveRotation(destinoDoLoop.rotation); // Forma mais segura de rotacionar um Rigidbody
 
+                    AnomalyManager.instance.IniciarProximaVolta();
+
                     Debug.Log("Teleporte concluído. Jogador olhando na direção de 'DestinoDoLoop'");
                 }
             }

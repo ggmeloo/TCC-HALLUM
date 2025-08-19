@@ -1,64 +1,92 @@
 using UnityEngine;
+using System.Collections; // Necessário para Corrotinas, embora não estejam mais neste script.
 
 public class AnomalyManager : MonoBehaviour
 {
-    // A forma mais simples de Singleton: uma variável estática pública.
-    // Qualquer script pode acessá-la com "AnomalyManager.instance".
+    // Variáveis que pertencem à classe inteira
     public static AnomalyManager instance;
 
+    [Header("Controle do Loop")]
+    public int voltaAtual = 1;
+
+    [Header("Referências da Cena")]
+    public DemonioController demonio;
+    public GameObject paredeDestino;
+    public GameObject triggerFimPerseguicao;
+
+    [Header("Pontos de Susto")]
+    public Transform pontoSustoPorta;
+    public Transform pontoSustoCorrida;
+    public Transform pontoFuga;
+    [Tooltip("Ponto de onde o demônio surgirá para iniciar a perseguição na volta 4.")]
+    public Transform pontoInicioPerseguicao; // Novo ponto!
+
+    // As variáveis de anomalia também pertencem à classe
     private int totalDeAnomaliasNaCena;
     private int anomaliasEncontradas = 0;
 
-    // Awake é chamado antes de qualquer método Start.
+    // O método Awake
     void Awake()
     {
-        // Se nenhuma instância do gerenciador existe ainda...
-        if (instance == null)
-        {
-            // ...esta se torna a instância.
-            instance = this;
-        }
-        else
-        {
-            // Se uma instância já existe (é um duplicado), se autodestrói.
-            // Isso garante que SEMPRE haverá apenas um AnomalyManager.
-            Destroy(gameObject);
-        }
+        if (instance == null) instance = this;
+        else Destroy(gameObject);
     }
 
+    // O método Start
     void Start()
     {
-        // CORRIGIDO: Usando o método moderno e removendo o erro de obsoleto.
+        if (demonio != null) demonio.gameObject.SetActive(false);
+        if (paredeDestino != null) paredeDestino.SetActive(true);
+
         totalDeAnomaliasNaCena = FindObjectsByType<Anomalia>(FindObjectsSortMode.None).Length;
+        Debug.Log("VOLTA " + voltaAtual + " INICIADA.");
 
-        if (totalDeAnomaliasNaCena == 0)
+        // Garante que o gatilho de fim comece o jogo DESATIVADO.
+        if (triggerFimPerseguicao != null)
         {
-            Debug.LogWarning("AVISO: Nenhuma anomalia foi encontrada na cena. Verifique se os objetos corretos têm o script 'Anomalia'.");
+            triggerFimPerseguicao.SetActive(false);
         }
-        else
-        {
-            Debug.Log("CENA INICIADA. Total de anomalias para encontrar: " + totalDeAnomaliasNaCena);
-        }
+
     }
 
-    // Método público para que outros scripts possam registrar uma anomalia encontrada.
-    public void RegistrarAnomaliaEncontrada()
+    // O método IniciarProximaVolta (agora no lugar correto)
+    public void IniciarProximaVolta()
     {
-        if (anomaliasEncontradas < totalDeAnomaliasNaCena)
-        {
-            anomaliasEncontradas++;
-            Debug.Log("Anomalia encontrada! Progresso: " + anomaliasEncontradas + "/" + totalDeAnomaliasNaCena);
+        voltaAtual++;
+        Debug.Log("VOLTA " + voltaAtual + " INICIADA.");
 
-            if (anomaliasEncontradas >= totalDeAnomaliasNaCena)
-            {
-                TodasAnomaliasEncontradas();
-            }
+        switch (voltaAtual)
+        {
+            case 2:
+                if (paredeDestino != null)
+                {
+                    paredeDestino.SetActive(false);
+                    Debug.Log("A passagem para o destino foi aberta.");
+                }
+
+                if (demonio != null)
+                {
+                    demonio.AparecerEAssombrar(pontoSustoPorta);
+                }
+                break;
+
+            case 3:
+                if (demonio != null)
+                {
+                    demonio.Desaparecer();
+                    demonio.ExecutarSustoDaCorrida(pontoSustoCorrida, pontoFuga);
+                }
+                break;
+
+            case 4:
+                Debug.Log("A perseguição pode ser ativada nesta volta.");
+                break;
         }
     }
 
-    private void TodasAnomaliasEncontradas()
-    {
-        Debug.LogWarning("!!! TODAS AS ANOMALIAS FORAM ENCONTRADAS. FIM DO LOOP !!!");
-        // Coloque aqui sua lógica para avançar (abrir uma porta, carregar o próximo nível, etc.)
-    }
+    // O método RegistrarAnomaliaEncontrada
+    public void RegistrarAnomaliaEncontrada() { /* seu código aqui */ }
+
+    // O método TodasAnomaliasEncontradas
+    private void TodasAnomaliasEncontradas() { /* seu código aqui */ }
 }
