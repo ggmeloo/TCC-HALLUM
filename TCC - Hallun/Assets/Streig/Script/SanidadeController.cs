@@ -29,7 +29,7 @@ public class SanidadeController : MonoBehaviour
     [Tooltip("Valor máximo da Abertura da lente para o desfoque.")]
     public float maxAperture = 32f;
     [Tooltip("Intensidade máxima do Desfoque de Movimento.")]
-    [Range(0, 1)]
+    [Range(0, 10000)]
     public float maxMotionBlurIntensity = 0.5f;
 
     [Header("Curva de Aceleração do Blur")]
