@@ -1,51 +1,48 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
+using TMPro;
 
 public class IdentificadorDeAnomalias : MonoBehaviour
 {
     [Header("Referências Visuais e Sonoras")]
-    // MUDANÇA IMPORTANTE: A referência agora é para o componente Image, não o GameObject.
-    [Tooltip("Arraste o objeto de UI 'EfeitoCameraUI' para este campo.")]
     public Image efeitoCameraUI;
+    public TextMeshProUGUI mensagemFeedbackText;
 
     [Header("Efeitos Sonoros")]
-    [Tooltip("Som de estática que toca enquanto a câmera está ativa.")]
-    public AudioClip somChiado;
-    [Tooltip("Som que toca UMA VEZ ao segurar o botão direito.")]
-    public AudioClip somZoomIn;
-    [Tooltip("Som que toca UMA VEZ ao soltar o botão direito.")]
-    public AudioClip somZoomOut;
-    [Tooltip("Som de 'clique' ao identificar uma anomalia.")]
-    public AudioClip somFoto;
+    public AudioClip somChiado, somZoomIn, somZoomOut, somFoto, somDigitacao;
 
     [Header("Configurações de Efeitos")]
     public float fovNormal = 60f;
     public float fovZoom = 40f;
     public float velocidadeZoom = 10f;
-    [Tooltip("Velocidade com que a interface da câmera aparece e desaparece.")]
     public float velocidadeFade = 8f;
+    public float velocidadeDigitacao = 0.05f;
+    public float duracaoMensagem = 2.5f;
 
     [Header("Identificação de Anomalias")]
     public float distanciaMaxima = 10f;
 
+    // Componentes privados
     private Camera cameraPrincipal;
     private AudioSource audioSource;
-    private Color corOriginalUI;
+    private Coroutine mensagemCoroutine;
 
     void Awake()
     {
         cameraPrincipal = GetComponent<Camera>();
-
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null) { audioSource = gameObject.AddComponent<AudioSource>(); }
-        audioSource.playOnAwake = false;
 
         if (efeitoCameraUI != null)
         {
-            // Garante que a UI comece invisível, mas ativa.
             efeitoCameraUI.gameObject.SetActive(true);
-            corOriginalUI = efeitoCameraUI.color; // Guarda a cor original
-            efeitoCameraUI.color = new Color(corOriginalUI.r, corOriginalUI.g, corOriginalUI.b, 0f); // Zera o alpha
+            efeitoCameraUI.color = new Color(efeitoCameraUI.color.r, efeitoCameraUI.color.g, efeitoCameraUI.color.b, 0f);
+        }
+
+        if (mensagemFeedbackText != null)
+        {
+            mensagemFeedbackText.text = "";
         }
 
         if (cameraPrincipal != null) cameraPrincipal.fieldOfView = fovNormal;
@@ -53,29 +50,23 @@ public class IdentificadorDeAnomalias : MonoBehaviour
 
     void Update()
     {
-        // --- LÓGICA DE SOM DE ZOOM ---
-        // Toca o som de "zoom in" no exato frame em que o botão é pressionado.
-        if (Input.GetMouseButtonDown(1))
-        {
-            TocarSom(somZoomIn);
-        }
-        // Toca o som de "zoom out" no exato frame em que o botão é solto.
-        if (Input.GetMouseButtonUp(1))
-        {
-            TocarSom(somZoomOut);
-        }
+        if (Input.GetMouseButtonDown(1)) TocarSom(somZoomIn);
+        if (Input.GetMouseButtonUp(1)) TocarSom(somZoomOut);
 
-        // --- LÓGICA DE EFEITOS CONTÍNUOS (ENQUANTO SEGURA O BOTÃO) ---
-        if (Input.GetMouseButton(1))
+        bool estaMirando = Input.GetMouseButton(1);
+
+        if (estaMirando)
         {
-            // Efeitos visuais (Zoom da câmera e Fade In da UI)
+            // --- LÓGICA ENQUANTO MIRA ---
+
+            // Aplica efeitos visuais
             cameraPrincipal.fieldOfView = Mathf.Lerp(cameraPrincipal.fieldOfView, fovZoom, Time.deltaTime * velocidadeZoom);
-            AtualizarFadeUI(1f); // Alvo alpha = 1 (visível)
+            AtualizarFadeUI(1f);
 
-            // Efeito sonoro contínuo (Chiado)
+            // Toca som de chiado
             ControlarSomChiado(true);
 
-            // Ação de identificar a anomalia
+            // Verifica se tirou a foto
             if (Input.GetMouseButtonDown(0))
             {
                 IdentificarAnomalia();
@@ -83,31 +74,35 @@ public class IdentificadorDeAnomalias : MonoBehaviour
         }
         else
         {
-            // Reverte os efeitos visuais (Zoom out e Fade Out da UI)
+            // --- LÓGICA QUANDO NÃO ESTÁ MIRANDO ---
+
+            // Reverte os efeitos visuais
             cameraPrincipal.fieldOfView = Mathf.Lerp(cameraPrincipal.fieldOfView, fovNormal, Time.deltaTime * velocidadeZoom);
-            AtualizarFadeUI(0f); // Alvo alpha = 0 (invisível)
+            AtualizarFadeUI(0f);
 
-            // Para o som contínuo (Chiado)
+            // Para o som de chiado
             ControlarSomChiado(false);
+
+            // --- MUDANÇA PRINCIPAL AQUI ---
+            // Se o jogador não está mirando e uma mensagem estava sendo exibida...
+            if (mensagemCoroutine != null)
+            {
+                // ...interrompe a corrotina e limpa o texto imediatamente.
+                StopCoroutine(mensagemCoroutine);
+                mensagemCoroutine = null; // Libera a referência para a próxima vez
+                if (mensagemFeedbackText != null)
+                {
+                    mensagemFeedbackText.text = "";
+                }
+            }
         }
     }
 
-    // Função para fazer o fade in/out da UI da câmera
-    void AtualizarFadeUI(float alphaAlvo)
-    {
-        if (efeitoCameraUI != null)
-        {
-            // Pega a cor atual
-            Color corAtual = efeitoCameraUI.color;
-            // Calcula o novo alpha suavemente
-            float novoAlpha = Mathf.Lerp(corAtual.a, alphaAlvo, Time.deltaTime * velocidadeFade);
-            // Aplica a nova cor com o alpha atualizado
-            efeitoCameraUI.color = new Color(corAtual.r, corAtual.g, corAtual.b, novoAlpha);
-        }
-    }
+    // --- O RESTO DO SCRIPT NÃO PRECISA DE MUDANÇAS ---
 
     void IdentificarAnomalia()
     {
+        TocarSom(somFoto);
         Ray raio = new Ray(transform.position, transform.forward);
         RaycastHit hitInfo;
 
@@ -116,14 +111,63 @@ public class IdentificadorDeAnomalias : MonoBehaviour
             Anomalia anomaliaDetectada = hitInfo.collider.GetComponent<Anomalia>();
             if (anomaliaDetectada != null)
             {
-                // Toca o som da foto ANTES de identificar
-                TocarSom(somFoto);
-                anomaliaDetectada.Identificar();
+                bool sucessoNaIdentificacao = anomaliaDetectada.Identificar();
+                if (sucessoNaIdentificacao)
+                {
+                    MostrarMensagem("ANOMALIA IDENTIFICADA", Color.green);
+                }
+                else
+                {
+                    MostrarMensagem("ANOMALIA JÁ IDENTIFICADA", Color.yellow);
+                }
             }
+            else
+            {
+                MostrarMensagem("NENHUMA ANOMALIA IDENTIFICADA", Color.red);
+            }
+        }
+        else
+        {
+            MostrarMensagem("NENHUMA ANOMALIA IDENTIFICADA", Color.red);
         }
     }
 
-    // Funções auxiliares de som
+    void MostrarMensagem(string texto, Color cor)
+    {
+        if (mensagemCoroutine != null) StopCoroutine(mensagemCoroutine);
+        mensagemCoroutine = StartCoroutine(MensagemTypewriterCoroutine(texto, cor));
+    }
+
+    private IEnumerator MensagemTypewriterCoroutine(string texto, Color cor)
+    {
+        if (mensagemFeedbackText != null)
+        {
+            mensagemFeedbackText.color = cor;
+            mensagemFeedbackText.text = "";
+
+            foreach (char letra in texto)
+            {
+                mensagemFeedbackText.text += letra;
+                TocarSom(somDigitacao);
+                yield return new WaitForSeconds(velocidadeDigitacao);
+            }
+
+            yield return new WaitForSeconds(duracaoMensagem);
+
+            mensagemFeedbackText.text = "";
+        }
+    }
+
+    void AtualizarFadeUI(float alphaAlvo)
+    {
+        if (efeitoCameraUI != null)
+        {
+            Color corAtual = efeitoCameraUI.color;
+            float novoAlpha = Mathf.Lerp(corAtual.a, alphaAlvo, Time.deltaTime * velocidadeFade);
+            efeitoCameraUI.color = new Color(corAtual.r, corAtual.g, corAtual.b, novoAlpha);
+        }
+    }
+
     void ControlarSomChiado(bool tocar)
     {
         if (audioSource != null && somChiado != null)
@@ -145,7 +189,6 @@ public class IdentificadorDeAnomalias : MonoBehaviour
     {
         if (audioSource != null && clip != null)
         {
-            // PlayOneShot é perfeito para sons que não devem se sobrepor ou parar o som principal
             audioSource.PlayOneShot(clip);
         }
     }

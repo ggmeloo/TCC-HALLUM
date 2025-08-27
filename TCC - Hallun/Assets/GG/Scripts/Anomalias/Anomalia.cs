@@ -4,29 +4,36 @@ public class Anomalia : MonoBehaviour
 {
     private bool jaFoiIdentificada = false;
 
-    public void Identificar()
+    // Este método agora retorna 'bool' (verdadeiro/falso).
+    // Ele informa se a identificação foi bem-sucedida (era a primeira vez).
+    public bool Identificar()
     {
         // Se esta anomalia ainda não foi encontrada...
         if (!jaFoiIdentificada)
         {
+            // ...marca como encontrada para não contar duas vezes.
             jaFoiIdentificada = true;
 
-            // CORRIGIDO: Chamando a instância estática simples do AnomalyManager.
-            // Adicionamos um teste para garantir que o manager exista antes de chamá-lo.
+            // Avisa ao Gerenciador que uma anomalia foi encontrada.
             if (AnomalyManager.instance != null)
             {
                 AnomalyManager.instance.RegistrarAnomaliaEncontrada();
             }
             else
             {
-                // Este erro aparecerá se você esquecer de colocar o AnomalyManager na cena.
                 Debug.LogError("ERRO CRÍTICO: O AnomalyManager não foi encontrado na cena!");
             }
 
             Debug.Log("O objeto '" + gameObject.name + "' foi identificado como uma anomalia.");
 
-            // Você pode adicionar um feedback aqui, como desativar o próprio objeto anômalo:
-            // gameObject.SetActive(false);
+            // Retorna VERDADEIRO para indicar que a identificação foi um sucesso.
+            return true;
+        }
+        else
+        {
+            // Se já foi identificada, não faz nada e retorna FALSO.
+            Debug.Log("O objeto '" + gameObject.name + "' já havia sido identificado.");
+            return false;
         }
     }
 }
