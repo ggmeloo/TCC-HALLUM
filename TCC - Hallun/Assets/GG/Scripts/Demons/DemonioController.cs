@@ -46,7 +46,7 @@ public class DemonioController : MonoBehaviour
         agent.Warp(pontoDeAparicao.position);
         transform.rotation = pontoDeAparicao.rotation;
 
-        yield return new WaitForSeconds(3f);
+        yield return new WaitForSeconds(10f);
 
         animator.SetTrigger("ComecarACorrer");
         agent.SetDestination(pontoDeFuga.position);
