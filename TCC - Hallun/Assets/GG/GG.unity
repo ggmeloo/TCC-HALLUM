@@ -2971,6 +2971,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: 2e921eca35935d04b932133faf7e7144, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 2e921eca35935d04b932133faf7e7144, type: 3}
       propertyPath: m_LocalScale.y
       value: 1.1701
@@ -2985,7 +2989,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 2e921eca35935d04b932133faf7e7144, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.30879045
+      value: -0.05
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: 2e921eca35935d04b932133faf7e7144, type: 3}
       propertyPath: m_LocalPosition.z
@@ -3022,7 +3026,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100000, guid: 2e921eca35935d04b932133faf7e7144, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2076554331}
   m_SourcePrefab: {fileID: 100100000, guid: 2e921eca35935d04b932133faf7e7144, type: 3}
 --- !u!4 &1452237697 stripped
 Transform:
@@ -4359,6 +4366,23 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.499319, y: 1.6746264, z: 1.2312664}
   m_Center: {x: -0.12942219, y: 0.33731318, z: -0.05279052}
+--- !u!1 &2076554327 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100000, guid: 2e921eca35935d04b932133faf7e7144, type: 3}
+  m_PrefabInstance: {fileID: 1452237696}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2076554331
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2076554327}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b71ee3faa1740b4bb67a7fca15734e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &2077979493
 PrefabInstance:
   m_ObjectHideFlags: 0

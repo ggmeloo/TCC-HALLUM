@@ -23,7 +23,6 @@ public class IdentificadorDeAnomalias : MonoBehaviour
     [Header("Identificação de Anomalias")]
     public float distanciaMaxima = 10f;
 
-    // Componentes privados
     private Camera cameraPrincipal;
     private AudioSource audioSource;
     private Coroutine mensagemCoroutine;
@@ -57,16 +56,9 @@ public class IdentificadorDeAnomalias : MonoBehaviour
 
         if (estaMirando)
         {
-            // --- LÓGICA ENQUANTO MIRA ---
-
-            // Aplica efeitos visuais
             cameraPrincipal.fieldOfView = Mathf.Lerp(cameraPrincipal.fieldOfView, fovZoom, Time.deltaTime * velocidadeZoom);
             AtualizarFadeUI(1f);
-
-            // Toca som de chiado
             ControlarSomChiado(true);
-
-            // Verifica se tirou a foto
             if (Input.GetMouseButtonDown(0))
             {
                 IdentificarAnomalia();
@@ -74,22 +66,13 @@ public class IdentificadorDeAnomalias : MonoBehaviour
         }
         else
         {
-            // --- LÓGICA QUANDO NÃO ESTÁ MIRANDO ---
-
-            // Reverte os efeitos visuais
             cameraPrincipal.fieldOfView = Mathf.Lerp(cameraPrincipal.fieldOfView, fovNormal, Time.deltaTime * velocidadeZoom);
             AtualizarFadeUI(0f);
-
-            // Para o som de chiado
             ControlarSomChiado(false);
-
-            // --- MUDANÇA PRINCIPAL AQUI ---
-            // Se o jogador não está mirando e uma mensagem estava sendo exibida...
             if (mensagemCoroutine != null)
             {
-                // ...interrompe a corrotina e limpa o texto imediatamente.
                 StopCoroutine(mensagemCoroutine);
-                mensagemCoroutine = null; // Libera a referência para a próxima vez
+                mensagemCoroutine = null;
                 if (mensagemFeedbackText != null)
                 {
                     mensagemFeedbackText.text = "";
@@ -97,8 +80,6 @@ public class IdentificadorDeAnomalias : MonoBehaviour
             }
         }
     }
-
-    // --- O RESTO DO SCRIPT NÃO PRECISA DE MUDANÇAS ---
 
     void IdentificarAnomalia()
     {
@@ -153,7 +134,6 @@ public class IdentificadorDeAnomalias : MonoBehaviour
             }
 
             yield return new WaitForSeconds(duracaoMensagem);
-
             mensagemFeedbackText.text = "";
         }
     }
