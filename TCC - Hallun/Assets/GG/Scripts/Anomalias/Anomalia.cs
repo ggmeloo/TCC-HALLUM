@@ -2,38 +2,34 @@ using UnityEngine;
 
 public class Anomalia : MonoBehaviour
 {
+    public enum TipoAnomalia { Fixa, Aleatoria }
+
+    [Tooltip("Defina se esta anomalia é Fixa (tutorial) ou Aleatória.")]
+    public TipoAnomalia tipo = TipoAnomalia.Aleatoria;
+
     private bool jaFoiIdentificada = false;
 
-    // Este método agora retorna 'bool' (verdadeiro/falso).
-    // Ele informa se a identificação foi bem-sucedida (era a primeira vez).
+    // Permite que outros scripts leiam o estado sem alterá-lo.
+    public bool FoiIdentificada()
+    {
+        return jaFoiIdentificada;
+    }
+
+    public void AtivarAnomalia() { gameObject.SetActive(true); }
+    public void DesativarAnomalia() { gameObject.SetActive(false); }
+    public void ResetarIdentificacao() { jaFoiIdentificada = false; }
+
     public bool Identificar()
     {
-        // Se esta anomalia ainda não foi encontrada...
         if (!jaFoiIdentificada)
         {
-            // ...marca como encontrada para não contar duas vezes.
             jaFoiIdentificada = true;
-
-            // Avisa ao Gerenciador que uma anomalia foi encontrada.
             if (AnomalyManager.instance != null)
             {
                 AnomalyManager.instance.RegistrarAnomaliaEncontrada();
             }
-            else
-            {
-                Debug.LogError("ERRO CRÍTICO: O AnomalyManager não foi encontrado na cena!");
-            }
-
-            Debug.Log("O objeto '" + gameObject.name + "' foi identificado como uma anomalia.");
-
-            // Retorna VERDADEIRO para indicar que a identificação foi um sucesso.
             return true;
         }
-        else
-        {
-            // Se já foi identificada, não faz nada e retorna FALSO.
-            Debug.Log("O objeto '" + gameObject.name + "' já havia sido identificado.");
-            return false;
-        }
+        return false;
     }
 }
