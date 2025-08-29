@@ -21,6 +21,9 @@ public class AnomalyManager : MonoBehaviour
     public DemonioController demonio;
     public GameObject paredeDestino;
     public GameObject triggerFimPerseguicao;
+    [Tooltip("Arraste o objeto pai que contém todos os textos do tutorial para cá.")]
+    public GameObject textosDoTutorial; // A "caixa" que vamos desligar
+
     [Header("Pontos de Susto")]
     public Transform pontoSustoPorta, pontoSustoCorrida, pontoFuga, pontoInicioPerseguicao;
 
@@ -36,46 +39,43 @@ public class AnomalyManager : MonoBehaviour
         if (demonio != null) demonio.gameObject.SetActive(false);
         if (paredeDestino != null) paredeDestino.SetActive(true);
         if (triggerFimPerseguicao != null) triggerFimPerseguicao.SetActive(false);
+        // Garante que os textos do tutorial comecem ativos
+        if (textosDoTutorial != null) textosDoTutorial.SetActive(true);
 
         SelecionarNovasAnomaliasParaVolta();
         ExibirAnomaliasRestantes();
     }
 
-    // Este método agora sempre avança para a próxima volta
     public void IniciarProximaVolta()
     {
         Debug.Log("Fim da volta " + voltaAtual + ". Avançando para a próxima.");
 
-        // Reseta o estado das anomalias da volta que acabou
         foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
         {
             anomalia.ResetarIdentificacao();
         }
 
-        // Avança o contador de volta
         voltaAtual++;
-
-        // Executa os eventos da nova volta
         ExecutarEventosDaVolta();
-
-        // Prepara um novo conjunto de anomalias
         SelecionarNovasAnomaliasParaVolta();
-
-        // Exibe as novas anomalias na cena
         ExibirAnomaliasRestantes();
     }
 
-    // Controla os eventos com script
     private void ExecutarEventosDaVolta()
     {
         switch (voltaAtual)
         {
             case 2:
-                // A parede é desativada aqui, no início da volta 2
                 if (paredeDestino != null)
                 {
                     paredeDestino.SetActive(false);
-                    Debug.Log("A passagem para o destino foi aberta.");
+                }
+
+                // Desliga a "caixa" com todos os textos do tutorial de uma vez.
+                if (textosDoTutorial != null)
+                {
+                    textosDoTutorial.SetActive(false);
+                    Debug.Log("Textos do tutorial foram desativados.");
                 }
 
                 if (demonio != null) demonio.AparecerEAssombrar(pontoSustoPorta);
@@ -90,7 +90,6 @@ public class AnomalyManager : MonoBehaviour
         }
     }
 
-    // Seleciona as anomalias para a volta atual
     void SelecionarNovasAnomaliasParaVolta()
     {
         anomaliasEncontradasNestaVolta = 0;
@@ -110,16 +109,12 @@ public class AnomalyManager : MonoBehaviour
         }
     }
 
-    // Ativa as anomalias selecionadas na cena
     void ExibirAnomaliasRestantes()
     {
-        // Primeiro desativa todas as anomalias da seleção anterior para limpar a cena
         foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
         {
             anomalia.DesativarAnomalia();
         }
-
-        // Agora ativa as novas anomalias selecionadas para a volta atual
         foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
         {
             anomalia.AtivarAnomalia();
@@ -127,7 +122,6 @@ public class AnomalyManager : MonoBehaviour
         Debug.Log("VOLTA " + voltaAtual + " CONFIGURADA. Anomalias para encontrar: " + anomaliasSelecionadasParaEstaVolta.Count);
     }
 
-    // Encontra e organiza todas as anomalias da cena no início
     void OrganizarTodasAnomalias()
     {
         Anomalia[] todasAnomalias = FindObjectsByType<Anomalia>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -139,19 +133,16 @@ public class AnomalyManager : MonoBehaviour
         }
     }
 
-    // Registra quando uma anomalia é encontrada
     public void RegistrarAnomaliaEncontrada()
     {
         anomaliasEncontradasNestaVolta++;
         Debug.Log("Anomalia encontrada! Progresso nesta volta: " + anomaliasEncontradasNestaVolta + "/" + anomaliasSelecionadasParaEstaVolta.Count);
-
         if (anomaliasEncontradasNestaVolta >= anomaliasSelecionadasParaEstaVolta.Count)
         {
             TodasAnomaliasEncontradas();
         }
     }
 
-    // Apenas um feedback para o jogador
     private void TodasAnomaliasEncontradas()
     {
         Debug.LogWarning("!!! TODAS AS ANOMALIAS DA VOLTA " + voltaAtual + " FORAM ENCONTRADAS! !!!");
