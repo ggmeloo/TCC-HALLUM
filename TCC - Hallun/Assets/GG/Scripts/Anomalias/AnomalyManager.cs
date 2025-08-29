@@ -10,26 +10,19 @@ public class AnomalyManager : MonoBehaviour
     public int voltaAtual = 1;
 
     [Header("Configuração das Anomalias")]
-    [Tooltip("Defina quantas anomalias aleatórias devem aparecer em cada volta (a partir da Volta 2).")]
     public int[] quantidadeAnomaliasPorVolta = new int[] { 3, 4, 5 };
 
-    // Listas para organizar todas as anomalias
     private List<Anomalia> anomaliasFixas = new List<Anomalia>();
     private List<Anomalia> anomaliasAleatorias = new List<Anomalia>();
-    // Lista "memória" que guarda as anomalias escolhidas para a volta atual
     private List<Anomalia> anomaliasSelecionadasParaEstaVolta = new List<Anomalia>();
     private int anomaliasEncontradasNestaVolta = 0;
 
     [Header("Referências da Cena")]
-    [Tooltip("Arraste o GameObject da parede que bloqueia o caminho do destino para cá.")]
-    public GameObject paredeDestino;
     public DemonioController demonio;
+    public GameObject paredeDestino;
     public GameObject triggerFimPerseguicao;
     [Header("Pontos de Susto")]
-    public Transform pontoSustoPorta;
-    public Transform pontoSustoCorrida;
-    public Transform pontoFuga;
-    public Transform pontoInicioPerseguicao;
+    public Transform pontoSustoPorta, pontoSustoCorrida, pontoFuga, pontoInicioPerseguicao;
 
     void Awake()
     {
@@ -40,53 +33,45 @@ public class AnomalyManager : MonoBehaviour
 
     void Start()
     {
-        // Configuração inicial da cena
         if (demonio != null) demonio.gameObject.SetActive(false);
-        if (paredeDestino != null) paredeDestino.SetActive(true); // Garante que a parede comece ativa
+        if (paredeDestino != null) paredeDestino.SetActive(true);
         if (triggerFimPerseguicao != null) triggerFimPerseguicao.SetActive(false);
 
-        // Prepara e exibe as anomalias da primeira volta
         SelecionarNovasAnomaliasParaVolta();
         ExibirAnomaliasRestantes();
     }
 
+    // Este método agora sempre avança para a próxima volta
     public void IniciarProximaVolta()
     {
-        // Verifica se o jogador encontrou todas as anomalias da volta atual
-        if (anomaliasEncontradasNestaVolta >= anomaliasSelecionadasParaEstaVolta.Count)
-        {
-            // SUCESSO: O jogador encontrou tudo
-            Debug.Log("Volta " + voltaAtual + " completada com sucesso!");
+        Debug.Log("Fim da volta " + voltaAtual + ". Avançando para a próxima.");
 
-            // Reseta o estado das anomalias da volta que acabou de passar
-            foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
-            {
-                anomalia.ResetarIdentificacao();
-            }
-
-            // Avança para a próxima volta e aciona os eventos
-            voltaAtual++;
-            ExecutarEventosDaVolta();
-            // Seleciona um NOVO conjunto de anomalias para a nova volta
-            SelecionarNovasAnomaliasParaVolta();
-        }
-        else
+        // Reseta o estado das anomalias da volta que acabou
+        foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
         {
-            // FALHA: O jogador não encontrou tudo, então a volta é reiniciada
-            Debug.LogWarning("Nem todas as anomalias foram encontradas! Reiniciando a Volta " + voltaAtual + ".");
+            anomalia.ResetarIdentificacao();
         }
 
-        // Reexibe as anomalias restantes (seja da mesma volta ou da nova)
+        // Avança o contador de volta
+        voltaAtual++;
+
+        // Executa os eventos da nova volta
+        ExecutarEventosDaVolta();
+
+        // Prepara um novo conjunto de anomalias
+        SelecionarNovasAnomaliasParaVolta();
+
+        // Exibe as novas anomalias na cena
         ExibirAnomaliasRestantes();
     }
 
-    // Método que lida com os eventos com script de cada volta
+    // Controla os eventos com script
     private void ExecutarEventosDaVolta()
     {
         switch (voltaAtual)
         {
             case 2:
-                // Esta é a linha correta. Ela desativa o objeto INTEIRO (parte visual e colisor).
+                // A parede é desativada aqui, no início da volta 2
                 if (paredeDestino != null)
                 {
                     paredeDestino.SetActive(false);
@@ -105,12 +90,11 @@ public class AnomalyManager : MonoBehaviour
         }
     }
 
-    // Seleciona e "memoriza" quais anomalias farão parte da volta atual
+    // Seleciona as anomalias para a volta atual
     void SelecionarNovasAnomaliasParaVolta()
     {
         anomaliasEncontradasNestaVolta = 0;
         anomaliasSelecionadasParaEstaVolta.Clear();
-
         if (voltaAtual == 1)
         {
             anomaliasSelecionadasParaEstaVolta.AddRange(anomaliasFixas);
@@ -119,7 +103,6 @@ public class AnomalyManager : MonoBehaviour
         {
             int quantidadeParaAtivar = quantidadeAnomaliasPorVolta[voltaAtual - 2];
             var anomaliasEmbaralhadas = anomaliasAleatorias.OrderBy(a => Random.value).ToList();
-
             for (int i = 0; i < quantidadeParaAtivar && i < anomaliasEmbaralhadas.Count; i++)
             {
                 anomaliasSelecionadasParaEstaVolta.Add(anomaliasEmbaralhadas[i]);
@@ -127,27 +110,24 @@ public class AnomalyManager : MonoBehaviour
         }
     }
 
-    // Ativa na cena apenas as anomalias que ainda não foram encontradas pelo jogador
+    // Ativa as anomalias selecionadas na cena
     void ExibirAnomaliasRestantes()
     {
-        int anomaliasAtivasCount = 0;
+        // Primeiro desativa todas as anomalias da seleção anterior para limpar a cena
         foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
         {
-            if (anomalia.FoiIdentificada())
-            {
-                anomalia.DesativarAnomalia();
-            }
-            else
-            {
-                anomalia.AtivarAnomalia();
-                anomaliasAtivasCount++;
-            }
+            anomalia.DesativarAnomalia();
         }
 
-        Debug.Log("VOLTA " + voltaAtual + " CONFIGURADA. Anomalias restantes para encontrar: " + anomaliasAtivasCount);
+        // Agora ativa as novas anomalias selecionadas para a volta atual
+        foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
+        {
+            anomalia.AtivarAnomalia();
+        }
+        Debug.Log("VOLTA " + voltaAtual + " CONFIGURADA. Anomalias para encontrar: " + anomaliasSelecionadasParaEstaVolta.Count);
     }
 
-    // Encontra e organiza todas as anomalias da cena no início do jogo
+    // Encontra e organiza todas as anomalias da cena no início
     void OrganizarTodasAnomalias()
     {
         Anomalia[] todasAnomalias = FindObjectsByType<Anomalia>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -159,7 +139,7 @@ public class AnomalyManager : MonoBehaviour
         }
     }
 
-    // Chamado pelo script Anomalia.cs quando uma anomalia é identificada com sucesso
+    // Registra quando uma anomalia é encontrada
     public void RegistrarAnomaliaEncontrada()
     {
         anomaliasEncontradasNestaVolta++;
@@ -174,6 +154,6 @@ public class AnomalyManager : MonoBehaviour
     // Apenas um feedback para o jogador
     private void TodasAnomaliasEncontradas()
     {
-        Debug.LogWarning("!!! TODAS AS ANOMALIAS DA VOLTA " + voltaAtual + " FORAM ENCONTRADAS! Você pode prosseguir. !!!");
+        Debug.LogWarning("!!! TODAS AS ANOMALIAS DA VOLTA " + voltaAtual + " FORAM ENCONTRADAS! !!!");
     }
 }
