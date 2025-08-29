@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using System.Collections;
+using TMPro;
 
 public class SanidadeController : MonoBehaviour
 {
@@ -13,6 +15,11 @@ public class SanidadeController : MonoBehaviour
 
     [Header("UI")]
     public Slider barraSanidade;
+    public TextMeshProUGUI avisoSanidadeText;
+    // --- ALTERADO: Valores ajustados para o seu pedido ---
+    public float duracaoPiscada = 0.2f;
+    public int quantidadePiscadas = 3;
+    private bool aviso50Mostrado = false;
 
     [Header("Efeitos URP")]
     public Volume volumeSanidade;
@@ -60,7 +67,6 @@ public class SanidadeController : MonoBehaviour
     private MotionBlur motionBlur;
     private float sanidadeAnterior;
 
-    // Valores iniciais para reset
     private float initialFocusDistance;
     private float initialAperture;
     private float initialMotionBlurIntensity;
@@ -74,6 +80,8 @@ public class SanidadeController : MonoBehaviour
         SalvarValoresIniciais();
         ResetarEfeitosParaSanidadeMaxima();
         AtualizarUI();
+
+        if (avisoSanidadeText != null) avisoSanidadeText.gameObject.SetActive(false);
 
         Debug.Log("Controles de teste:");
         Debug.Log($"{teclaReduzirSanidade} - Reduzir {reducaoTeste} de sanidade");
@@ -109,7 +117,6 @@ public class SanidadeController : MonoBehaviour
 
     void ResetarEfeitosParaSanidadeMaxima()
     {
-        // Resetar todos os efeitos para valores normais
         if (depthOfField != null)
         {
             depthOfField.focusDistance.value = initialFocusDistance;
@@ -149,11 +156,9 @@ public class SanidadeController : MonoBehaviour
 
     void Update()
     {
-        // Decaimento natural da sanidade
         sanidadeAtual -= taxaDecaimento * Time.deltaTime;
         sanidadeAtual = Mathf.Clamp(sanidadeAtual, 0, sanidadeMaxima);
 
-        // Controles de teste
         if (Input.GetKeyDown(teclaReduzirSanidade))
         {
             ReduzirSanidadeTeste();
@@ -166,12 +171,48 @@ public class SanidadeController : MonoBehaviour
             Debug.Log("Sanidade restaurada completamente!");
         }
 
-        // Atualizar efeitos visuais apenas se houver mudança
         if (Mathf.Abs(sanidadeAtual - sanidadeAnterior) > 0.01f)
         {
             AtualizarUI();
             AtualizarEfeitosVisuais();
+
+            if (sanidadeAtual <= sanidadeMaxima * 0.5f && !aviso50Mostrado)
+            {
+                StartCoroutine(PiscarTextoDeAviso());
+                aviso50Mostrado = true;
+            }
+
             sanidadeAnterior = sanidadeAtual;
+        }
+
+        if (sanidadeAtual > sanidadeMaxima * 0.5f && aviso50Mostrado)
+        {
+            aviso50Mostrado = false;
+        }
+    }
+
+    IEnumerator PiscarTextoDeAviso()
+    {
+        if (avisoSanidadeText != null)
+        {
+            avisoSanidadeText.text = "Atenção sua sanidade está ficando baixa!";
+
+            // Efeito de piscar o texto (3 vezes, 0.2s cada)
+            for (int i = 0; i < quantidadePiscadas; i++)
+            {
+                avisoSanidadeText.gameObject.SetActive(true);
+                yield return new WaitForSeconds(duracaoPiscada);
+                avisoSanidadeText.gameObject.SetActive(false);
+                yield return new WaitForSeconds(duracaoPiscada);
+            }
+
+            // Garante que o texto fique visível por 3 segundos após piscar
+            avisoSanidadeText.gameObject.SetActive(true);
+            // --- ALTERADO: Tempo que o texto fica fixo na tela ---
+            yield return new WaitForSeconds(3f);
+
+            // Esconde o texto no final
+            avisoSanidadeText.gameObject.SetActive(false);
         }
     }
 
@@ -179,10 +220,8 @@ public class SanidadeController : MonoBehaviour
     {
         float porcentagemSanidade = sanidadeAtual / sanidadeMaxima;
 
-        // Só aplicar efeitos de blur quando a sanidade estiver abaixo de 50%
         if (sanidadeAtual > sanidadeMaxima / 2f)
         {
-            // Sanidade alta - manter efeitos mínimos
             if (depthOfField != null)
             {
                 depthOfField.focusDistance.value = initialFocusDistance;
@@ -196,11 +235,9 @@ public class SanidadeController : MonoBehaviour
         }
         else
         {
-            // Calcular intensidade do blur apenas quando sanidade <= 50%
             float progressoBlur = 1 - (sanidadeAtual / (sanidadeMaxima / 2f));
             float intensidadeBlur = blurCurve.Evaluate(progressoBlur);
 
-            // Aplicar efeitos de blur
             if (depthOfField != null)
             {
                 depthOfField.focusDistance.value = Mathf.Lerp(initialFocusDistance, minFocusDistance, intensidadeBlur);
@@ -213,7 +250,6 @@ public class SanidadeController : MonoBehaviour
             }
         }
 
-        // Efeitos gerais (aplicados gradualmente desde o início)
         float intensidadeGeral = 1 - porcentagemSanidade;
 
         if (vignette != null)
@@ -236,13 +272,11 @@ public class SanidadeController : MonoBehaviour
             filmGrain.intensity.value = Mathf.Lerp(0, maxFilmGrain, intensidadeGeral);
         }
 
-        // Efeito de tela
         if (efeitoTela != null)
         {
             efeitoTela.color = Color.Lerp(corAltaSanidade, corBaixaSanidade, intensidadeGeral);
         }
 
-        // Efeitos sonoros
         if (sanidadeAtual < 30f)
         {
             if (!audioSource.isPlaying && somCoracao != null)
@@ -256,7 +290,6 @@ public class SanidadeController : MonoBehaviour
         }
     }
 
-    // Funções de teste - mantidas como você queria
     void ReduzirSanidadeTeste()
     {
         sanidadeAtual = Mathf.Max(sanidadeAtual - reducaoTeste, 0);
@@ -265,7 +298,11 @@ public class SanidadeController : MonoBehaviour
     void RestaurarSanidadeCompleta()
     {
         sanidadeAtual = sanidadeMaxima;
+        aviso50Mostrado = false;
+        if (avisoSanidadeText != null) avisoSanidadeText.gameObject.SetActive(false);
     }
+
+
 
     public void RecuperarSanidade()
     {
