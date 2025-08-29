@@ -10563,6 +10563,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 401912, guid: a71dd1fa6efddfa41990980cd044de47, type: 3}
   m_PrefabInstance: {fileID: 728833819}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &939373920 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100000, guid: 525e42c8aa5e52e4ea137bc78720fcfc, type: 3}
+  m_PrefabInstance: {fileID: 1119241516}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &940954628
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13249,7 +13254,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100000, guid: 525e42c8aa5e52e4ea137bc78720fcfc, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1264293848}
   m_SourcePrefab: {fileID: 100100000, guid: 525e42c8aa5e52e4ea137bc78720fcfc, type: 3}
 --- !u!1001 &1119291835
 PrefabInstance:
@@ -15152,6 +15160,18 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 525e42c8aa5e52e4ea137bc78720fcfc, type: 3}
   m_PrefabInstance: {fileID: 1119241516}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1264293848
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 939373920}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b71ee3faa1740b4bb67a7fca15734e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1265535724
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -16808,7 +16828,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bde2a78597b63147af5d56a6ac10313, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  voltaAtual: 1
+  voltaAtual: 2
   demonio: {fileID: 691509731}
   paredeDestino: {fileID: 593484172}
   triggerFimPerseguicao: {fileID: 512554375}
@@ -25278,6 +25298,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: d2a17ae04e15d7e48842bdb68fc27339, type: 3}
   m_PrefabInstance: {fileID: 935121069}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2064098193
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2064098194}
+  m_Layer: 0
+  m_Name: Anomalia volta 1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2064098194
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2064098193}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: -15.397, y: 3.308, z: -6.747}
+  m_LocalScale: {x: 2.3136, y: 1, z: 2.6556017}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2065045821
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -26179,7 +26230,7 @@ Light:
   serializedVersion: 11
   m_Type: 1
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 0.004
+  m_Intensity: 2.32
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -26883,6 +26934,7 @@ SceneRoots:
   - {fileID: 23849144}
   - {fileID: 1693397448}
   - {fileID: 419965868}
+  - {fileID: 2064098194}
   - {fileID: 1405102810}
   - {fileID: 906996123}
   - {fileID: 1572518118}

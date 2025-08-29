@@ -1,5 +1,4 @@
 using UnityEngine;
-
 public class Anomalia : MonoBehaviour
 {
     private bool jaFoiIdentificada = false;
