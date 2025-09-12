@@ -5197,9 +5197,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   voltaAtual: 1
+  anomaliasTutorialContainer: {fileID: 0}
+  anomaliasAleatoriasContainer: {fileID: 0}
+  quantidadeAnomaliasPorVolta: 030000000400000005000000
   demonio: {fileID: 693924472}
   paredeDestino: {fileID: 458183886}
   triggerFimPerseguicao: {fileID: 1490188507}
+  textosDoTutorial: {fileID: 0}
+  containerDeLuzes: {fileID: 0}
+  gatilhoDeVolta: {fileID: 0}
   pontoSustoPorta: {fileID: 461123201}
   pontoSustoCorrida: {fileID: 1228994665}
   pontoFuga: {fileID: 1199998565}
@@ -17881,8 +17887,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.95800006}
-  m_AnchoredPosition: {x: -506, y: 176}
-  m_SizeDelta: {x: 160, y: -327.1509}
+  m_AnchoredPosition: {x: -431.4, y: 89.8}
+  m_SizeDelta: {x: 160, y: -262.7979}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1326631104
 MonoBehaviour:
@@ -19261,7 +19267,7 @@ Transform:
   m_GameObject: {fileID: 1423842584}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 13.032, y: 1.8712034, z: -8.17}
+  m_LocalPosition: {x: 13.032, y: 2.676, z: -8.17}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -20075,7 +20081,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!136 &1462167744
 CapsuleCollider:
   m_ObjectHideFlags: 0

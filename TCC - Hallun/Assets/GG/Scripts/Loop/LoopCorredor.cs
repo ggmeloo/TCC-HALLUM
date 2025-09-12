@@ -4,28 +4,32 @@ public class LoopCorredor : MonoBehaviour
 {
     public Transform destinoDoLoop;
 
+    // Adicionamos esta variável para garantir que o gatilho só dispare uma vez por passagem
+    private bool jaFoiAtivado = false;
+
     private void OnTriggerEnter(Collider other)
     {
-        // Verifica se é o jogador
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("Player") && !jaFoiAtivado)
         {
-            // Verifica se o destino está configurado
+            // Marca como ativado para evitar múltiplos disparos
+            jaFoiAtivado = true;
+
             if (destinoDoLoop != null)
             {
                 Rigidbody rb = other.GetComponent<Rigidbody>();
                 if (rb != null)
                 {
-                    // Zera a velocidade para um teleporte limpo
+                    // A lógica de teleporte permanece, como no seu script
                     rb.linearVelocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
-
-                    // AÇÃO PRINCIPAL - Move o jogador e ajusta sua rotação
                     rb.MovePosition(destinoDoLoop.position);
-                    rb.MoveRotation(destinoDoLoop.rotation); // Forma mais segura de rotacionar um Rigidbody
+                    rb.MoveRotation(destinoDoLoop.rotation);
 
-                    AnomalyManager.instance.IniciarProximaVolta();
+                    // --- ESTA É A LINHA CORRIGIDA ---
+                    // Agora ele chama o método pelo nome correto: "ProcessarMudancaDeVolta"
+                    AnomalyManager.instance.ProcessarMudancaDeVolta();
 
-                    Debug.Log("Teleporte concluído. Jogador olhando na direção de 'DestinoDoLoop'");
+                    Debug.Log("Teleporte concluído. Processando a próxima volta.");
                 }
             }
             else
@@ -33,5 +37,12 @@ public class LoopCorredor : MonoBehaviour
                 Debug.LogError("O DESTINO DO LOOP NÃO FOI DEFINIDO NO INSPETOR!");
             }
         }
+    }
+
+    // O AnomalyManager pode chamar este método para "rearmar" o gatilho.
+    // Embora na lógica atual não seja estritamente necessário, é uma boa prática.
+    public void ResetarGatilho()
+    {
+        jaFoiAtivado = false;
     }
 }

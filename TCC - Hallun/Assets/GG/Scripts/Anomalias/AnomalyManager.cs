@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using System.Collections;
 
 public class AnomalyManager : MonoBehaviour
 {
@@ -9,16 +10,19 @@ public class AnomalyManager : MonoBehaviour
     [Header("Controle do Loop")]
     public int voltaAtual = 1;
 
-    [Header("Configuração das Anomalias")]
+    [Header("Referências dos Containers de Anomalias")]
+    [Tooltip("Arraste o objeto PAI que contém as anomalias do tutorial para cá.")]
+    public GameObject anomaliasTutorialContainer;
+    [Tooltip("Arraste o objeto PAI que contém TODAS as anomalias aleatórias para cá.")]
+    public GameObject anomaliasAleatoriasContainer;
+
+    [Header("Configuração das Voltas")]
     public int[] quantidadeAnomaliasPorVolta = new int[] { 3, 4, 5 };
 
-    // --- LÓGICA DE LISTAS CORRIGIDA ---
+    // Listas internas
     private List<Anomalia> anomaliasFixas = new List<Anomalia>();
-    // "Piscina" de anomalias que ainda não foram usadas.
     private List<Anomalia> anomaliasAleatoriasDisponiveis = new List<Anomalia>();
-    // "Cemitério" de anomalias que já foram usadas.
     private List<Anomalia> anomaliasAleatoriasJaUsadas = new List<Anomalia>();
-
     private List<Anomalia> anomaliasSelecionadasParaEstaVolta = new List<Anomalia>();
     private int anomaliasEncontradasNestaVolta = 0;
 
@@ -26,8 +30,9 @@ public class AnomalyManager : MonoBehaviour
     public DemonioController demonio;
     public GameObject paredeDestino;
     public GameObject triggerFimPerseguicao;
-    [Tooltip("Arraste o objeto pai que contém todos os textos do tutorial para cá.")]
     public GameObject textosDoTutorial;
+    public GameObject containerDeLuzes;
+    public GatilhoDeVolta gatilhoDeVolta;
 
     [Header("Pontos de Susto")]
     public Transform pontoSustoPorta, pontoSustoCorrida, pontoFuga, pontoInicioPerseguicao;
@@ -36,43 +41,51 @@ public class AnomalyManager : MonoBehaviour
     {
         if (instance == null) instance = this;
         else Destroy(gameObject);
-        OrganizarTodasAnomalias();
+        OrganizarAnomaliasDaCena();
     }
 
     void Start()
     {
+        // Configuração inicial para a Volta 1
         if (demonio != null) demonio.gameObject.SetActive(false);
         if (paredeDestino != null) paredeDestino.SetActive(true);
         if (triggerFimPerseguicao != null) triggerFimPerseguicao.SetActive(false);
-        if (textosDoTutorial != null) textosDoTutorial.SetActive(true);
+        if (textosDoTutorial != null) textosDoTutorial.SetActive(false);
+        if (containerDeLuzes != null) containerDeLuzes.SetActive(true);
+        if (anomaliasTutorialContainer != null) anomaliasTutorialContainer.SetActive(false);
 
-        SelecionarNovasAnomaliasParaVolta();
-        ExibirAnomaliasRestantes();
+        Debug.Log("VOLTA 1 (Reconhecimento) INICIADA.");
     }
 
-    public void IniciarProximaVolta()
+    void OrganizarAnomaliasDaCena()
     {
-        if (voltaAtual == 1)
+        // Busca as anomalias usando o método robusto do script de teste
+        if (anomaliasTutorialContainer != null)
         {
-            if (paredeDestino != null && paredeDestino.activeSelf) paredeDestino.SetActive(false);
-            if (textosDoTutorial != null && textosDoTutorial.activeSelf) textosDoTutorial.SetActive(false);
+            anomaliasFixas.AddRange(anomaliasTutorialContainer.GetComponentsInChildren<Anomalia>(true));
         }
-
-        if (anomaliasEncontradasNestaVolta >= anomaliasSelecionadasParaEstaVolta.Count)
+        if (anomaliasAleatoriasContainer != null)
         {
-            Debug.Log("Volta " + voltaAtual + " completada com sucesso!");
+            anomaliasAleatoriasDisponiveis.AddRange(anomaliasAleatoriasContainer.GetComponentsInChildren<Anomalia>(true));
+        }
+    }
 
-            // Move as anomalias da volta bem-sucedida para a lista de "já usadas".
-            foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
+    public void ProcessarMudancaDeVolta()
+    {
+        if (voltaAtual == 1 || anomaliasEncontradasNestaVolta >= anomaliasSelecionadasParaEstaVolta.Count)
+        {
+            if (voltaAtual > 1)
             {
-                if (anomalia.tipo == Anomalia.TipoAnomalia.Aleatoria)
+                foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
                 {
-                    anomaliasAleatoriasDisponiveis.Remove(anomalia);
-                    anomaliasAleatoriasJaUsadas.Add(anomalia);
+                    if (anomalia.tipo == Anomalia.TipoAnomalia.Aleatoria)
+                    {
+                        anomaliasAleatoriasDisponiveis.Remove(anomalia);
+                        anomaliasAleatoriasJaUsadas.Add(anomalia);
+                    }
+                    anomalia.ResetarIdentificacao();
                 }
-                anomalia.ResetarIdentificacao();
             }
-
             voltaAtual++;
             ExecutarEventosDaVolta();
             SelecionarNovasAnomaliasParaVolta();
@@ -81,29 +94,23 @@ public class AnomalyManager : MonoBehaviour
         {
             Debug.LogWarning("Nem todas as anomalias foram encontradas! Reiniciando a Volta " + voltaAtual + ".");
         }
-
         ExibirAnomaliasRestantes();
+        if (gatilhoDeVolta != null) gatilhoDeVolta.ResetarGatilho();
     }
 
-    // --- LÓGICA DE EXIBIÇÃO CORRIGIDA ---
-    void ExibirAnomaliasRestantes()
+    private void ExecutarEventosDaVolta()
     {
-        // PASSO 1: LIMPEZA TOTAL - Desativa TODAS as anomalias possíveis para garantir uma cena limpa.
-        foreach (var anomalia in anomaliasFixas) anomalia.DesativarAnomalia();
-        foreach (var anomalia in anomaliasAleatoriasDisponiveis) anomalia.DesativarAnomalia();
-        foreach (var anomalia in anomaliasAleatoriasJaUsadas) anomalia.DesativarAnomalia();
-
-        // PASSO 2: ATIVAÇÃO SELETIVA - Ativa apenas as anomalias que ainda não foram encontradas na seleção desta volta.
-        int anomaliasAtivasCount = 0;
-        foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
+        switch (voltaAtual)
         {
-            if (!anomalia.FoiIdentificada())
-            {
-                anomalia.AtivarAnomalia();
-                anomaliasAtivasCount++;
-            }
+            case 2: // PANE DE ENERGIA E TUTORIAL
+                if (containerDeLuzes != null) StartCoroutine(PiscarLuzesCoroutine(5, 0.1f));
+                if (paredeDestino != null) paredeDestino.SetActive(false);
+                if (textosDoTutorial != null) textosDoTutorial.SetActive(true);
+                break;
+            case 3: // Susto
+                if (demonio != null) demonio.AparecerEAssombrar(pontoSustoPorta);
+                break;
         }
-        Debug.Log("VOLTA " + voltaAtual + " CONFIGURADA. Anomalias restantes: " + anomaliasAtivasCount);
     }
 
     void SelecionarNovasAnomaliasParaVolta()
@@ -111,66 +118,66 @@ public class AnomalyManager : MonoBehaviour
         anomaliasEncontradasNestaVolta = 0;
         anomaliasSelecionadasParaEstaVolta.Clear();
 
-        if (voltaAtual == 1)
+        if (voltaAtual == 2)
         {
             anomaliasSelecionadasParaEstaVolta.AddRange(anomaliasFixas);
         }
-        else if (voltaAtual > 1 && (voltaAtual - 2) < quantidadeAnomaliasPorVolta.Length)
+        else if (voltaAtual > 2)
         {
-            int quantidadeParaAtivar = quantidadeAnomaliasPorVolta[voltaAtual - 2];
-
-            // Sorteia apenas da piscina de anomalias que ainda não foram usadas.
-            var anomaliasEmbaralhadas = anomaliasAleatoriasDisponiveis.OrderBy(a => Random.value).ToList();
-
-            for (int i = 0; i < quantidadeParaAtivar && i < anomaliasEmbaralhadas.Count; i++)
+            int index = voltaAtual - 3;
+            if (index < quantidadeAnomaliasPorVolta.Length)
             {
-                anomaliasSelecionadasParaEstaVolta.Add(anomaliasEmbaralhadas[i]);
+                int quantidadeParaAtivar = quantidadeAnomaliasPorVolta[index];
+                var anomaliasEmbaralhadas = anomaliasAleatoriasDisponiveis.OrderBy(a => Random.value).ToList();
+                for (int i = 0; i < quantidadeParaAtivar && i < anomaliasEmbaralhadas.Count; i++)
+                {
+                    anomaliasSelecionadasParaEstaVolta.Add(anomaliasEmbaralhadas[i]);
+                }
             }
         }
     }
 
-    // O resto do script permanece o mesmo...
-
-    private void ExecutarEventosDaVolta()
+    void ExibirAnomaliasRestantes()
     {
-        switch (voltaAtual)
+        // Limpeza: desativa todos os containers primeiro para garantir
+        if (anomaliasTutorialContainer != null) anomaliasTutorialContainer.SetActive(false);
+        // Desativa anomalias aleatórias individualmente
+        foreach (var anomalia in anomaliasAleatoriasDisponiveis) anomalia.gameObject.SetActive(false);
+        foreach (var anomalia in anomaliasAleatoriasJaUsadas) anomalia.gameObject.SetActive(false);
+
+        // Ativação seletiva
+        if (voltaAtual == 2)
         {
-            case 2:
-                if (demonio != null) demonio.AparecerEAssombrar(pontoSustoPorta);
-                break;
-            case 3:
-                if (demonio != null)
-                {
-                    demonio.Desaparecer();
-                    demonio.ExecutarSustoDaCorrida(pontoSustoCorrida, pontoFuga);
-                }
-                break;
+            if (anomaliasTutorialContainer != null) anomaliasTutorialContainer.SetActive(true);
         }
+        else if (voltaAtual > 2)
+        {
+            foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
+            {
+                if (!anomalia.FoiIdentificada())
+                {
+                    anomalia.gameObject.SetActive(true);
+                }
+            }
+        }
+        Debug.Log("VOLTA " + voltaAtual + " CONFIGURADA. Anomalias para encontrar: " + anomaliasSelecionadasParaEstaVolta.Count);
     }
 
-    void OrganizarTodasAnomalias()
+    private IEnumerator PiscarLuzesCoroutine(int piscadas, float intervalo)
     {
-        Anomalia[] todasAnomalias = FindObjectsByType<Anomalia>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        foreach (var anomalia in todasAnomalias)
+        for (int i = 0; i < piscadas; i++)
         {
-            if (anomalia.tipo == Anomalia.TipoAnomalia.Fixa) anomaliasFixas.Add(anomalia);
-            else anomaliasAleatoriasDisponiveis.Add(anomalia);
-            anomalia.DesativarAnomalia();
+            containerDeLuzes.SetActive(false);
+            yield return new WaitForSeconds(intervalo);
+            containerDeLuzes.SetActive(true);
+            yield return new WaitForSeconds(intervalo);
         }
+        containerDeLuzes.SetActive(false);
     }
 
     public void RegistrarAnomaliaEncontrada()
     {
         anomaliasEncontradasNestaVolta++;
         Debug.Log("Anomalia encontrada! Progresso: " + anomaliasEncontradasNestaVolta + "/" + anomaliasSelecionadasParaEstaVolta.Count);
-        if (anomaliasEncontradasNestaVolta >= anomaliasSelecionadasParaEstaVolta.Count)
-        {
-            TodasAnomaliasEncontradas();
-        }
-    }
-
-    private void TodasAnomaliasEncontradas()
-    {
-        Debug.LogWarning("!!! TODAS AS ANOMALIAS DA VOLTA " + voltaAtual + " FORAM ENCONTRADAS! Você pode prosseguir. !!!");
     }
 }

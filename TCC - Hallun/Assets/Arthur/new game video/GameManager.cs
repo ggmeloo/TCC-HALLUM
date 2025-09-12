@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
@@ -32,11 +33,7 @@ public class GameManager : MonoBehaviour
 
     private void OnVideoEnd(VideoPlayer vp)
     {
-        // 1. Esconde a tela do vídeo novamente
-        videoScreen.gameObject.SetActive(false);
-
-        // 2. Reativa o conteúdo do jogo ou carrega a próxima cena
-        gameContent.SetActive(true);
         // Você pode substituir a linha acima por "SceneManager.LoadScene("NomeDaSuaCena");" se quiser carregar outra tela
+        SceneManager.LoadScene(1);
     }
 }

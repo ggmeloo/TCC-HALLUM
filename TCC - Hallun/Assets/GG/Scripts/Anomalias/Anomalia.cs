@@ -9,12 +9,7 @@ public class Anomalia : MonoBehaviour
 
     private bool jaFoiIdentificada = false;
 
-    // Permite que outros scripts leiam o estado sem alterá-lo.
-    public bool FoiIdentificada()
-    {
-        return jaFoiIdentificada;
-    }
-
+    public bool FoiIdentificada() { return jaFoiIdentificada; }
     public void AtivarAnomalia() { gameObject.SetActive(true); }
     public void DesativarAnomalia() { gameObject.SetActive(false); }
     public void ResetarIdentificacao() { jaFoiIdentificada = false; }
