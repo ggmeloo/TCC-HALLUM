@@ -1,12 +1,5 @@
 {
   "dependencies": {
-    "com.cqf.urpvolumetricfog": {
-      "version": "https://github.com/CristianQiu/Unity-URP-Volumetric-Light.git",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "3f28b49218ca4c928ca0d4c3d508f0c0ddf43473"
-    },
     "com.febucci.custom-hierarchy": {
       "version": "https://github.com/febucci/unitypackage-custom-hierarchy.git",
       "depth": 0,
@@ -36,15 +29,6 @@
       "dependencies": {
         "com.unity.mathematics": "1.2.1",
         "com.unity.modules.jsonserialize": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.cinemachine": {
-      "version": "2.10.3",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.test-framework": "1.1.31"
       },
       "url": "https://packages.unity.com"
     },

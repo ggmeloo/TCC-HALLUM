@@ -1,59 +1,46 @@
 using UnityEngine;
-using TMPro;
 
 public class PickupFlashlight : MonoBehaviour
 {
-    [Tooltip("Arraste o objeto de texto da sua UI para cá.")]
-    public TextMeshProUGUI textoDeColeta;
-
-    private PlayerActions playerActions; // Agora a referência é para o script do Player
+    private PlayerFlashlightController playerController;
     private bool playerIsNear = false;
 
-    void Start()
-    {
-        if (textoDeColeta != null)
-        {
-            textoDeColeta.text = "";
-        }
-    }
-
+    // Quando o jogador entra na área do trigger
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
         {
-            // Tenta pegar o script PlayerActions no objeto que colidiu
-            playerActions = other.GetComponent<PlayerActions>();
-
-            // Verifica se o player realmente tem o script e se a lanterna ainda não foi coletada
-            if (playerActions != null && playerActions.lanternaController != null && !playerActions.lanternaController.temLanterna)
+            playerController = other.GetComponent<PlayerFlashlightController>();
+            if (playerController != null && !playerController.hasFlashlight)
             {
                 playerIsNear = true;
-                if (textoDeColeta != null) textoDeColeta.text = "Pressione 'E' para pegar a lanterna";
+                playerController.DisplayPickupMessage(true); // Pede para o script do player mostrar a mensagem
             }
         }
     }
 
+    // Quando o jogador sai da área do trigger
     private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
         {
             playerIsNear = false;
-            if (textoDeColeta != null) textoDeColeta.text = "";
+            if (playerController != null)
+            {
+                playerController.DisplayPickupMessage(false); // Pede para o script do player esconder a mensagem
+            }
         }
     }
 
+    // Verifica a cada frame se o jogador quer pegar o item
     private void Update()
     {
         if (playerIsNear && Input.GetKeyDown(KeyCode.E))
         {
-            if (playerActions != null)
+            if (playerController != null && !playerController.hasFlashlight)
             {
-                // Chama o método no Player, que vai repassar o comando
-                playerActions.ColetouLanterna();
-
-                // Limpa o texto e se autodestrói
-                if (textoDeColeta != null) textoDeColeta.text = "";
-                Destroy(gameObject);
+                playerController.OnFlashlightCollected(); // Avisa o player que a lanterna foi coletada
+                Destroy(gameObject); // Destrói a si mesmo (a lanterna no chão)
             }
         }
     }
