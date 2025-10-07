@@ -5,7 +5,6 @@ public class PickupFlashlight : MonoBehaviour
     private PlayerFlashlightController playerController;
     private bool playerIsNear = false;
 
-    // Quando o jogador entra na área do trigger
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
@@ -14,12 +13,11 @@ public class PickupFlashlight : MonoBehaviour
             if (playerController != null && !playerController.hasFlashlight)
             {
                 playerIsNear = true;
-                playerController.DisplayPickupMessage(true); // Pede para o script do player mostrar a mensagem
+                playerController.DisplayPickupMessage(true);
             }
         }
     }
 
-    // Quando o jogador sai da área do trigger
     private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
@@ -27,20 +25,19 @@ public class PickupFlashlight : MonoBehaviour
             playerIsNear = false;
             if (playerController != null)
             {
-                playerController.DisplayPickupMessage(false); // Pede para o script do player esconder a mensagem
+                playerController.DisplayPickupMessage(false);
             }
         }
     }
 
-    // Verifica a cada frame se o jogador quer pegar o item
     private void Update()
     {
         if (playerIsNear && Input.GetKeyDown(KeyCode.E))
         {
             if (playerController != null && !playerController.hasFlashlight)
             {
-                playerController.OnFlashlightCollected(); // Avisa o player que a lanterna foi coletada
-                Destroy(gameObject); // Destrói a si mesmo (a lanterna no chão)
+                playerController.OnFlashlightCollected();
+                Destroy(gameObject);
             }
         }
     }

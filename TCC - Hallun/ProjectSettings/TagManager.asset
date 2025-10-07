@@ -8,6 +8,8 @@ TagManager:
   - GatilhoDeTeleporte
   - Morte
   - morte
+  - Pilula
+  - FlashlightPickup
   layers:
   - Default
   - TransparentFX

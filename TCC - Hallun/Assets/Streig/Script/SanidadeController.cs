@@ -12,11 +12,11 @@ public class SanidadeController : MonoBehaviour
     public float sanidadeAtual = 100f;
     public float taxaDecaimento = 0.5f;
     public float sanidadePorPilula = 10f;
+    public bool podePerderSanidade = false;
 
     [Header("UI")]
     public Slider barraSanidade;
     public TextMeshProUGUI avisoSanidadeText;
-    // --- ALTERADO: Valores ajustados para o seu pedido ---
     public float duracaoPiscada = 0.2f;
     public int quantidadePiscadas = 3;
     private bool aviso50Mostrado = false;
@@ -73,7 +73,10 @@ public class SanidadeController : MonoBehaviour
 
     void Start()
     {
+        // --- ALTERADO: Agora o script não assume que o AudioSource existe ---
+        // Ele tenta pegar o componente. Se não encontrar, audioSource continuará nulo.
         audioSource = GetComponent<AudioSource>();
+
         sanidadeAtual = sanidadeMaxima;
         sanidadeAnterior = sanidadeAtual;
         ConfigurarEfeitosURP();
@@ -156,8 +159,11 @@ public class SanidadeController : MonoBehaviour
 
     void Update()
     {
-        sanidadeAtual -= taxaDecaimento * Time.deltaTime;
-        sanidadeAtual = Mathf.Clamp(sanidadeAtual, 0, sanidadeMaxima);
+        if (podePerderSanidade)
+        {
+            sanidadeAtual -= taxaDecaimento * Time.deltaTime;
+            sanidadeAtual = Mathf.Clamp(sanidadeAtual, 0, sanidadeMaxima);
+        }
 
         if (Input.GetKeyDown(teclaReduzirSanidade))
         {
@@ -197,7 +203,6 @@ public class SanidadeController : MonoBehaviour
         {
             avisoSanidadeText.text = "Atenção sua sanidade está ficando baixa!";
 
-            // Efeito de piscar o texto (3 vezes, 0.2s cada)
             for (int i = 0; i < quantidadePiscadas; i++)
             {
                 avisoSanidadeText.gameObject.SetActive(true);
@@ -206,12 +211,8 @@ public class SanidadeController : MonoBehaviour
                 yield return new WaitForSeconds(duracaoPiscada);
             }
 
-            // Garante que o texto fique visível por 3 segundos após piscar
             avisoSanidadeText.gameObject.SetActive(true);
-            // --- ALTERADO: Tempo que o texto fica fixo na tela ---
             yield return new WaitForSeconds(3f);
-
-            // Esconde o texto no final
             avisoSanidadeText.gameObject.SetActive(false);
         }
     }
@@ -277,14 +278,16 @@ public class SanidadeController : MonoBehaviour
             efeitoTela.color = Color.Lerp(corAltaSanidade, corBaixaSanidade, intensidadeGeral);
         }
 
+        // --- ALTERADO: Adicionamos "audioSource != null" para evitar o erro ---
+        // O código agora só tenta tocar o som SE o componente de áudio existir.
         if (sanidadeAtual < 30f)
         {
-            if (!audioSource.isPlaying && somCoracao != null)
+            if (audioSource != null && !audioSource.isPlaying && somCoracao != null)
             {
                 AtivarEfeitoLoucura();
             }
         }
-        else if (audioSource.isPlaying)
+        else if (audioSource != null && audioSource.isPlaying)
         {
             DesativarEfeitoLoucura();
         }
@@ -302,8 +305,6 @@ public class SanidadeController : MonoBehaviour
         if (avisoSanidadeText != null) avisoSanidadeText.gameObject.SetActive(false);
     }
 
-
-
     public void RecuperarSanidade()
     {
         sanidadeAtual = Mathf.Min(sanidadeAtual + sanidadePorPilula, sanidadeMaxima);
@@ -317,6 +318,7 @@ public class SanidadeController : MonoBehaviour
 
     void AtivarEfeitoLoucura()
     {
+        // --- ALTERADO: Verificação dupla para máxima segurança ---
         if (audioSource != null && somCoracao != null)
         {
             audioSource.PlayOneShot(somCoracao);
@@ -325,6 +327,7 @@ public class SanidadeController : MonoBehaviour
 
     void DesativarEfeitoLoucura()
     {
+        // --- ALTERADO: Verificação dupla para máxima segurança ---
         if (audioSource != null)
         {
             audioSource.Stop();

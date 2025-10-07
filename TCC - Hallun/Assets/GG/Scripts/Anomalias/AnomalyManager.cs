@@ -34,6 +34,7 @@ public class AnomalyManager : MonoBehaviour
     public GameObject textosDoTutorial;
     public GameObject containerDeLuzes;
     public GatilhoDeVolta gatilhoDeVolta;
+    public SanidadeController sanidadeController;
 
     [Header("Pontos de Susto")]
     public Transform pontoSustoPorta, pontoSustoCorrida, pontoFuga, pontoInicioPerseguicao;
@@ -47,7 +48,6 @@ public class AnomalyManager : MonoBehaviour
 
     void Start()
     {
-        // Configuração inicial para a Volta 1 (Reconhecimento)
         if (demonio != null) demonio.gameObject.SetActive(false);
         if (segundoDemonio != null) segundoDemonio.SetActive(false);
         if (paredeDestino != null) paredeDestino.SetActive(true);
@@ -61,7 +61,6 @@ public class AnomalyManager : MonoBehaviour
 
     public void ProcessarMudancaDeVolta()
     {
-        // A Volta 1 sempre avança. As outras, só se o jogador encontrar tudo.
         if (voltaAtual == 1 || anomaliasEncontradasNestaVolta >= anomaliasSelecionadasParaEstaVolta.Count)
         {
             Debug.Log("Volta " + voltaAtual + " completada com sucesso!");
@@ -92,14 +91,31 @@ public class AnomalyManager : MonoBehaviour
         if (gatilhoDeVolta != null) gatilhoDeVolta.ResetarGatilho();
     }
 
+    // --- SCRIPT MODIFICADO AQUI ---
+    // Adicionamos mensagens de log para diagnóstico.
     private void ExecutarEventosDaVolta()
     {
         switch (voltaAtual)
         {
             case 2: // PANE DE ENERGIA E TUTORIAL
+                Debug.Log("INICIANDO EVENTOS DA VOLTA 2."); // <-- Linha de diagnóstico adicionada
+
                 if (containerDeLuzes != null) StartCoroutine(PiscarLuzesCoroutine());
                 if (paredeDestino != null) paredeDestino.SetActive(false);
                 if (textosDoTutorial != null) textosDoTutorial.SetActive(true);
+
+                // Verificação aprimorada para ativar o sistema de sanidade
+                if (sanidadeController != null)
+                {
+                    sanidadeController.podePerderSanidade = true;
+                    // <-- Mensagem de sucesso adicionada
+                    Debug.Log("SISTEMA DE SANIDADE FOI ATIVADO COM SUCESSO!");
+                }
+                else
+                {
+                    // <-- Mensagem de erro clara adicionada
+                    Debug.LogError("ERRO CRÍTICO: A referência para o SanidadeController está VAZIA (None) no Inspector do AnomalyManager! A sanidade não será ativada.");
+                }
                 break;
             case 3: // Susto da Porta
                 if (demonio != null) demonio.AparecerEAssombrar(pontoSustoPorta);
@@ -111,7 +127,6 @@ public class AnomalyManager : MonoBehaviour
                     segundoDemonio.SetActive(true);
                     Debug.Log("Segundo demônio foi ativado!");
                 }
-                // A perseguição com o primeiro demônio será ativada pelo TriggerInicioPerseguicao
                 break;
         }
     }
