@@ -134,6 +134,11 @@ public class PlayerFlashlightController : MonoBehaviour
         ToggleFlashlight();
         StartCoroutine(ShowAndHideControlsMessage());
         if (programmedFlickerEnabled) { StartCoroutine(FlickerController()); }
+
+        // --- LINHA ADICIONADA ---
+        // Aqui chamamos o nosso sistema de legendas para mostrar uma fala do personagem.
+        // A mensagem ficará na tela por 5 segundos (5f).
+        SubtitleManager.instance.ShowSubtitle("Nossa, que escuro... Ainda bem que achei esta lanterna.", 5f);
     }
 
     private void HandleBattery()

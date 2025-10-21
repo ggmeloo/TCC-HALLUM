@@ -15,7 +15,11 @@ public class SanidadeController : MonoBehaviour
     public bool podePerderSanidade = false;
 
     [Header("UI")]
-    public Slider barraSanidade;
+    public Image painelVisaoTurva;
+    [Range(0, 1)]
+    public float maxOpacidadePainel = 0.85f;
+    public float velocidadeTransicaoPainel = 2f;
+
     public TextMeshProUGUI avisoSanidadeText;
     public float duracaoPiscada = 0.2f;
     public int quantidadePiscadas = 3;
@@ -31,11 +35,8 @@ public class SanidadeController : MonoBehaviour
     public float maxVignette = 0.5f;
 
     [Header("Configurações de Blur (Desfoque)")]
-    [Tooltip("Distância mínima do foco para o efeito de blur.")]
     public float minFocusDistance = 0.1f;
-    [Tooltip("Valor máximo da Abertura da lente para o desfoque.")]
     public float maxAperture = 32f;
-    [Tooltip("Intensidade máxima do Desfoque de Movimento.")]
     [Range(0, 10000)]
     public float maxMotionBlurIntensity = 0.5f;
 
@@ -52,11 +53,8 @@ public class SanidadeController : MonoBehaviour
     private AudioSource audioSource;
 
     [Header("Controles de Teste")]
-    [Tooltip("Tecla para reduzir sanidade (teste)")]
     public KeyCode teclaReduzirSanidade = KeyCode.J;
-    [Tooltip("Tecla para restaurar sanidade completa (teste)")]
     public KeyCode teclaRestaurarSanidade = KeyCode.H;
-    [Tooltip("Quantidade de sanidade reduzida ao pressionar a tecla de teste")]
     public float reducaoTeste = 10f;
 
     private LensDistortion lensDistortion;
@@ -66,26 +64,27 @@ public class SanidadeController : MonoBehaviour
     private DepthOfField depthOfField;
     private MotionBlur motionBlur;
     private float sanidadeAnterior;
-
     private float initialFocusDistance;
     private float initialAperture;
     private float initialMotionBlurIntensity;
+    private float opacidadeAlvoPainel;
 
     void Start()
     {
-        // --- ALTERADO: Agora o script não assume que o AudioSource existe ---
-        // Ele tenta pegar o componente. Se não encontrar, audioSource continuará nulo.
         audioSource = GetComponent<AudioSource>();
-
         sanidadeAtual = sanidadeMaxima;
         sanidadeAnterior = sanidadeAtual;
         ConfigurarEfeitosURP();
         SalvarValoresIniciais();
         ResetarEfeitosParaSanidadeMaxima();
-        AtualizarUI();
-
+        if (painelVisaoTurva != null)
+        {
+            Color painelColor = painelVisaoTurva.color;
+            painelColor.a = 0;
+            painelVisaoTurva.color = painelColor;
+            opacidadeAlvoPainel = 0;
+        }
         if (avisoSanidadeText != null) avisoSanidadeText.gameObject.SetActive(false);
-
         Debug.Log("Controles de teste:");
         Debug.Log($"{teclaReduzirSanidade} - Reduzir {reducaoTeste} de sanidade");
         Debug.Log($"{teclaRestaurarSanidade} - Restaurar sanidade completa");
@@ -111,7 +110,6 @@ public class SanidadeController : MonoBehaviour
             initialFocusDistance = depthOfField.focusDistance.value;
             initialAperture = depthOfField.aperture.value;
         }
-
         if (motionBlur != null)
         {
             initialMotionBlurIntensity = motionBlur.intensity.value;
@@ -125,36 +123,15 @@ public class SanidadeController : MonoBehaviour
             depthOfField.focusDistance.value = initialFocusDistance;
             depthOfField.aperture.value = initialAperture;
         }
-
         if (motionBlur != null)
         {
             motionBlur.intensity.value = initialMotionBlurIntensity;
         }
-
-        if (vignette != null)
-        {
-            vignette.intensity.value = 0;
-        }
-
-        if (lensDistortion != null)
-        {
-            lensDistortion.intensity.value = 0;
-        }
-
-        if (chromaticAberration != null)
-        {
-            chromaticAberration.intensity.value = 0;
-        }
-
-        if (filmGrain != null)
-        {
-            filmGrain.intensity.value = 0;
-        }
-
-        if (efeitoTela != null)
-        {
-            efeitoTela.color = corAltaSanidade;
-        }
+        if (vignette != null) vignette.intensity.value = 0;
+        if (lensDistortion != null) lensDistortion.intensity.value = 0;
+        if (chromaticAberration != null) chromaticAberration.intensity.value = 0;
+        if (filmGrain != null) filmGrain.intensity.value = 0;
+        if (efeitoTela != null) efeitoTela.color = corAltaSanidade;
     }
 
     void Update()
@@ -164,36 +141,35 @@ public class SanidadeController : MonoBehaviour
             sanidadeAtual -= taxaDecaimento * Time.deltaTime;
             sanidadeAtual = Mathf.Clamp(sanidadeAtual, 0, sanidadeMaxima);
         }
-
         if (Input.GetKeyDown(teclaReduzirSanidade))
         {
             ReduzirSanidadeTeste();
             Debug.Log($"Sanidade reduzida: {sanidadeAtual}/{sanidadeMaxima}");
         }
-
         if (Input.GetKeyDown(teclaRestaurarSanidade))
         {
             RestaurarSanidadeCompleta();
             Debug.Log("Sanidade restaurada completamente!");
         }
-
         if (Mathf.Abs(sanidadeAtual - sanidadeAnterior) > 0.01f)
         {
-            AtualizarUI();
             AtualizarEfeitosVisuais();
-
             if (sanidadeAtual <= sanidadeMaxima * 0.5f && !aviso50Mostrado)
             {
                 StartCoroutine(PiscarTextoDeAviso());
                 aviso50Mostrado = true;
             }
-
             sanidadeAnterior = sanidadeAtual;
         }
-
         if (sanidadeAtual > sanidadeMaxima * 0.5f && aviso50Mostrado)
         {
             aviso50Mostrado = false;
+        }
+        if (painelVisaoTurva != null)
+        {
+            Color painelColor = painelVisaoTurva.color;
+            painelColor.a = Mathf.Lerp(painelColor.a, opacidadeAlvoPainel, velocidadeTransicaoPainel * Time.deltaTime);
+            painelVisaoTurva.color = painelColor;
         }
     }
 
@@ -202,7 +178,6 @@ public class SanidadeController : MonoBehaviour
         if (avisoSanidadeText != null)
         {
             avisoSanidadeText.text = "Atenção sua sanidade está ficando baixa!";
-
             for (int i = 0; i < quantidadePiscadas; i++)
             {
                 avisoSanidadeText.gameObject.SetActive(true);
@@ -210,7 +185,6 @@ public class SanidadeController : MonoBehaviour
                 avisoSanidadeText.gameObject.SetActive(false);
                 yield return new WaitForSeconds(duracaoPiscada);
             }
-
             avisoSanidadeText.gameObject.SetActive(true);
             yield return new WaitForSeconds(3f);
             avisoSanidadeText.gameObject.SetActive(false);
@@ -220,7 +194,11 @@ public class SanidadeController : MonoBehaviour
     void AtualizarEfeitosVisuais()
     {
         float porcentagemSanidade = sanidadeAtual / sanidadeMaxima;
-
+        float intensidadeGeral = 1 - porcentagemSanidade;
+        if (painelVisaoTurva != null)
+        {
+            opacidadeAlvoPainel = intensidadeGeral * maxOpacidadePainel;
+        }
         if (sanidadeAtual > sanidadeMaxima / 2f)
         {
             if (depthOfField != null)
@@ -228,7 +206,6 @@ public class SanidadeController : MonoBehaviour
                 depthOfField.focusDistance.value = initialFocusDistance;
                 depthOfField.aperture.value = initialAperture;
             }
-
             if (motionBlur != null)
             {
                 motionBlur.intensity.value = initialMotionBlurIntensity;
@@ -238,48 +215,21 @@ public class SanidadeController : MonoBehaviour
         {
             float progressoBlur = 1 - (sanidadeAtual / (sanidadeMaxima / 2f));
             float intensidadeBlur = blurCurve.Evaluate(progressoBlur);
-
             if (depthOfField != null)
             {
                 depthOfField.focusDistance.value = Mathf.Lerp(initialFocusDistance, minFocusDistance, intensidadeBlur);
                 depthOfField.aperture.value = Mathf.Lerp(initialAperture, maxAperture, intensidadeBlur);
             }
-
             if (motionBlur != null)
             {
                 motionBlur.intensity.value = Mathf.Lerp(initialMotionBlurIntensity, maxMotionBlurIntensity, intensidadeBlur);
             }
         }
-
-        float intensidadeGeral = 1 - porcentagemSanidade;
-
-        if (vignette != null)
-        {
-            vignette.intensity.value = Mathf.Lerp(0, maxVignette, intensidadeGeral);
-        }
-
-        if (lensDistortion != null)
-        {
-            lensDistortion.intensity.value = Mathf.Lerp(0, maxIntensidadeDistorcao, intensidadeGeral);
-        }
-
-        if (chromaticAberration != null)
-        {
-            chromaticAberration.intensity.value = Mathf.Lerp(0, maxAberracaoCromatica, intensidadeGeral);
-        }
-
-        if (filmGrain != null)
-        {
-            filmGrain.intensity.value = Mathf.Lerp(0, maxFilmGrain, intensidadeGeral);
-        }
-
-        if (efeitoTela != null)
-        {
-            efeitoTela.color = Color.Lerp(corAltaSanidade, corBaixaSanidade, intensidadeGeral);
-        }
-
-        // --- ALTERADO: Adicionamos "audioSource != null" para evitar o erro ---
-        // O código agora só tenta tocar o som SE o componente de áudio existir.
+        if (vignette != null) vignette.intensity.value = Mathf.Lerp(0, maxVignette, intensidadeGeral);
+        if (lensDistortion != null) lensDistortion.intensity.value = Mathf.Lerp(0, maxIntensidadeDistorcao, intensidadeGeral);
+        if (chromaticAberration != null) chromaticAberration.intensity.value = Mathf.Lerp(0, maxAberracaoCromatica, intensidadeGeral);
+        if (filmGrain != null) filmGrain.intensity.value = Mathf.Lerp(0, maxFilmGrain, intensidadeGeral);
+        if (efeitoTela != null) efeitoTela.color = Color.Lerp(corAltaSanidade, corBaixaSanidade, intensidadeGeral);
         if (sanidadeAtual < 30f)
         {
             if (audioSource != null && !audioSource.isPlaying && somCoracao != null)
@@ -293,41 +243,36 @@ public class SanidadeController : MonoBehaviour
         }
     }
 
-    void ReduzirSanidadeTeste()
-    {
-        sanidadeAtual = Mathf.Max(sanidadeAtual - reducaoTeste, 0);
-    }
-
+    void ReduzirSanidadeTeste() { sanidadeAtual = Mathf.Max(sanidadeAtual - reducaoTeste, 0); }
     void RestaurarSanidadeCompleta()
     {
         sanidadeAtual = sanidadeMaxima;
         aviso50Mostrado = false;
         if (avisoSanidadeText != null) avisoSanidadeText.gameObject.SetActive(false);
     }
-
-    public void RecuperarSanidade()
-    {
-        sanidadeAtual = Mathf.Min(sanidadeAtual + sanidadePorPilula, sanidadeMaxima);
-    }
-
-    void AtualizarUI()
-    {
-        if (barraSanidade != null)
-            barraSanidade.value = sanidadeAtual / sanidadeMaxima;
-    }
-
+    public void RecuperarSanidade() { sanidadeAtual = Mathf.Min(sanidadeAtual + sanidadePorPilula, sanidadeMaxima); }
+    void AtualizarUI() { }
     void AtivarEfeitoLoucura()
     {
-        // --- ALTERADO: Verificação dupla para máxima segurança ---
         if (audioSource != null && somCoracao != null)
         {
             audioSource.PlayOneShot(somCoracao);
         }
     }
 
+    // --- NOVA FUNÇÃO ADICIONADA AQUI ---
+    public void ReduzirSanidadePorcentagem(float porcentagem)
+    {
+        if (porcentagem <= 0) return;
+        float valorReducao = sanidadeMaxima * (porcentagem / 100f);
+        sanidadeAtual -= valorReducao;
+        sanidadeAtual = Mathf.Clamp(sanidadeAtual, 0, sanidadeMaxima);
+        Debug.Log($"Sanidade reduzida em {valorReducao} pontos ({porcentagem}%). Sanidade atual: {sanidadeAtual}");
+    }
+    // ------------------------------------
+
     void DesativarEfeitoLoucura()
     {
-        // --- ALTERADO: Verificação dupla para máxima segurança ---
         if (audioSource != null)
         {
             audioSource.Stop();

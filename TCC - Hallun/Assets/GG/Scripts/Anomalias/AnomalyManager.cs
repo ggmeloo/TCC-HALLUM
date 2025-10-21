@@ -1,7 +1,8 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro; // <-- 1. ADICIONAR ESTA LINHA PARA USAR TEXTMESHPRO
 
 public class AnomalyManager : MonoBehaviour
 {
@@ -10,11 +11,11 @@ public class AnomalyManager : MonoBehaviour
     [Header("Controle do Loop")]
     public int voltaAtual = 1;
 
-    [Header("Configuração das Anomalias")]
-    [Tooltip("Defina quantas anomalias aleatórias devem aparecer em cada volta (a partir da Volta 3).")]
+    [Header("ConfiguraÃ§Ã£o das Anomalias")]
+    [Tooltip("Defina quantas anomalias aleatÃ³rias devem aparecer em cada volta (a partir da Volta 3).")]
     public int[] quantidadeAnomaliasPorVolta = new int[] { 3, 4, 5 };
 
-    [Header("Configuração da Pane de Energia")]
+    [Header("ConfiguraÃ§Ã£o da Pane de Energia")]
     public int numeroDePiscadas = 5;
     public float tempoEntrePiscadas = 0.1f;
 
@@ -25,9 +26,9 @@ public class AnomalyManager : MonoBehaviour
     private List<Anomalia> anomaliasSelecionadasParaEstaVolta = new List<Anomalia>();
     private int anomaliasEncontradasNestaVolta = 0;
 
-    [Header("Referências da Cena")]
+    [Header("ReferÃªncias da Cena")]
     public DemonioController demonio;
-    [Tooltip("Arraste o GameObject do segundo demônio (que aparece na volta 4) para cá.")]
+    [Tooltip("Arraste o GameObject do segundo demÃ´nio (que aparece na volta 4) para cÃ¡.")]
     public GameObject segundoDemonio;
     public GameObject paredeDestino;
     public GameObject triggerFimPerseguicao;
@@ -35,6 +36,10 @@ public class AnomalyManager : MonoBehaviour
     public GameObject containerDeLuzes;
     public GatilhoDeVolta gatilhoDeVolta;
     public SanidadeController sanidadeController;
+
+    // â–¼â–¼â–¼ 2. ADICIONAR ESTA LINHA â–¼â–¼â–¼
+    [Header("ReferÃªncias da UI")]
+    public TextMeshProUGUI textoAnomalias; // ReferÃªncia para o texto do contador
 
     [Header("Pontos de Susto")]
     public Transform pontoSustoPorta, pontoSustoCorrida, pontoFuga, pontoInicioPerseguicao;
@@ -57,6 +62,8 @@ public class AnomalyManager : MonoBehaviour
 
         ExibirAnomaliasRestantes();
         Debug.Log("VOLTA 1 (Reconhecimento) INICIADA.");
+
+        AtualizarContadorAnomalias(); // <-- 4. CHAMAR A FUNÃ‡ÃƒO AQUI
     }
 
     public void ProcessarMudancaDeVolta()
@@ -81,6 +88,8 @@ public class AnomalyManager : MonoBehaviour
             voltaAtual++;
             ExecutarEventosDaVolta();
             SelecionarNovasAnomaliasParaVolta();
+
+            AtualizarContadorAnomalias(); // <-- 4. CHAMAR A FUNÃ‡ÃƒO AQUI
         }
         else
         {
@@ -91,42 +100,24 @@ public class AnomalyManager : MonoBehaviour
         if (gatilhoDeVolta != null) gatilhoDeVolta.ResetarGatilho();
     }
 
-    // --- SCRIPT MODIFICADO AQUI ---
-    // Adicionamos mensagens de log para diagnóstico.
     private void ExecutarEventosDaVolta()
     {
         switch (voltaAtual)
         {
-            case 2: // PANE DE ENERGIA E TUTORIAL
-                Debug.Log("INICIANDO EVENTOS DA VOLTA 2."); // <-- Linha de diagnóstico adicionada
-
+            case 2:
+                Debug.Log("INICIANDO EVENTOS DA VOLTA 2.");
                 if (containerDeLuzes != null) StartCoroutine(PiscarLuzesCoroutine());
                 if (paredeDestino != null) paredeDestino.SetActive(false);
                 if (textosDoTutorial != null) textosDoTutorial.SetActive(true);
-
-                // Verificação aprimorada para ativar o sistema de sanidade
-                if (sanidadeController != null)
-                {
-                    sanidadeController.podePerderSanidade = true;
-                    // <-- Mensagem de sucesso adicionada
-                    Debug.Log("SISTEMA DE SANIDADE FOI ATIVADO COM SUCESSO!");
-                }
-                else
-                {
-                    // <-- Mensagem de erro clara adicionada
-                    Debug.LogError("ERRO CRÍTICO: A referência para o SanidadeController está VAZIA (None) no Inspector do AnomalyManager! A sanidade não será ativada.");
-                }
+                if (sanidadeController != null) sanidadeController.podePerderSanidade = true;
                 break;
-            case 3: // Susto da Porta
+            case 3:
+                if (textosDoTutorial != null) textosDoTutorial.SetActive(false);
                 if (demonio != null) demonio.AparecerEAssombrar(pontoSustoPorta);
                 break;
-            case 4: // Ativa o segundo demônio e remove o primeiro da porta
+            case 4:
                 if (demonio != null) demonio.Desaparecer();
-                if (segundoDemonio != null)
-                {
-                    segundoDemonio.SetActive(true);
-                    Debug.Log("Segundo demônio foi ativado!");
-                }
+                if (segundoDemonio != null) segundoDemonio.SetActive(true);
                 break;
         }
     }
@@ -148,11 +139,11 @@ public class AnomalyManager : MonoBehaviour
         anomaliasEncontradasNestaVolta = 0;
         anomaliasSelecionadasParaEstaVolta.Clear();
 
-        if (voltaAtual == 2) // Volta do Tutorial
+        if (voltaAtual == 2)
         {
             anomaliasSelecionadasParaEstaVolta.AddRange(anomaliasFixas);
         }
-        else if (voltaAtual > 2) // Voltas Aleatórias
+        else if (voltaAtual > 2)
         {
             int index = voltaAtual - 3;
             if (index < quantidadeAnomaliasPorVolta.Length)
@@ -200,5 +191,24 @@ public class AnomalyManager : MonoBehaviour
     {
         anomaliasEncontradasNestaVolta++;
         Debug.Log("Anomalia encontrada! Progresso: " + anomaliasEncontradasNestaVolta + "/" + anomaliasSelecionadasParaEstaVolta.Count);
+
+        AtualizarContadorAnomalias(); // <-- 4. CHAMAR A FUNÃ‡ÃƒO AQUI
+    }
+
+    // â–¼â–¼â–¼ 3. ADICIONAR ESTA FUNÃ‡ÃƒO INTEIRA â–¼â–¼â–¼
+    void AtualizarContadorAnomalias()
+    {
+        if (textoAnomalias == null) return; // ProteÃ§Ã£o para nÃ£o dar erro
+
+        // Se for a volta 1 ou se nÃ£o houver anomalias, esconde o texto
+        if (voltaAtual <= 1 || anomaliasSelecionadasParaEstaVolta.Count == 0)
+        {
+            textoAnomalias.gameObject.SetActive(false);
+        }
+        else // Caso contrÃ¡rio, exibe e atualiza
+        {
+            textoAnomalias.gameObject.SetActive(true);
+            textoAnomalias.text = $"Anomalias: {anomaliasEncontradasNestaVolta} / {anomaliasSelecionadasParaEstaVolta.Count}";
+        }
     }
 }
