@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using TMPro; // <-- 1. ADICIONAR ESTA LINHA PARA USAR TEXTMESHPRO
+using TMPro;
 
 public class AnomalyManager : MonoBehaviour
 {
@@ -19,7 +19,6 @@ public class AnomalyManager : MonoBehaviour
     public int numeroDePiscadas = 5;
     public float tempoEntrePiscadas = 0.1f;
 
-    // Listas para organizar as anomalias
     private List<Anomalia> anomaliasFixas = new List<Anomalia>();
     private List<Anomalia> anomaliasAleatoriasDisponiveis = new List<Anomalia>();
     private List<Anomalia> anomaliasAleatoriasJaUsadas = new List<Anomalia>();
@@ -27,8 +26,8 @@ public class AnomalyManager : MonoBehaviour
     private int anomaliasEncontradasNestaVolta = 0;
 
     [Header("Referências da Cena")]
+    public AmbientSoundManager ambientSoundManager; // Referência para o gerenciador de som
     public DemonioController demonio;
-    [Tooltip("Arraste o GameObject do segundo demônio (que aparece na volta 4) para cá.")]
     public GameObject segundoDemonio;
     public GameObject paredeDestino;
     public GameObject triggerFimPerseguicao;
@@ -37,9 +36,8 @@ public class AnomalyManager : MonoBehaviour
     public GatilhoDeVolta gatilhoDeVolta;
     public SanidadeController sanidadeController;
 
-    // ▼▼▼ 2. ADICIONAR ESTA LINHA ▼▼▼
     [Header("Referências da UI")]
-    public TextMeshProUGUI textoAnomalias; // Referência para o texto do contador
+    public TextMeshProUGUI textoAnomalias;
 
     [Header("Pontos de Susto")]
     public Transform pontoSustoPorta, pontoSustoCorrida, pontoFuga, pontoInicioPerseguicao;
@@ -59,27 +57,27 @@ public class AnomalyManager : MonoBehaviour
         if (triggerFimPerseguicao != null) triggerFimPerseguicao.SetActive(false);
         if (textosDoTutorial != null) textosDoTutorial.SetActive(false);
         if (containerDeLuzes != null) containerDeLuzes.SetActive(true);
+        if (sanidadeController != null) sanidadeController.podePerderSanidade = false;
 
-        ExibirAnomaliasRestantes();
         Debug.Log("VOLTA 1 (Reconhecimento) INICIADA.");
-
-        AtualizarContadorAnomalias(); // <-- 4. CHAMAR A FUNÇÃO AQUI
+        AtualizarContadorAnomalias();
     }
 
     public void ProcessarMudancaDeVolta()
     {
         if (voltaAtual == 1 || anomaliasEncontradasNestaVolta >= anomaliasSelecionadasParaEstaVolta.Count)
         {
-            Debug.Log("Volta " + voltaAtual + " completada com sucesso!");
-
             if (voltaAtual > 1)
             {
                 foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
                 {
                     if (anomalia.tipo == Anomalia.TipoAnomalia.Aleatoria)
                     {
-                        anomaliasAleatoriasDisponiveis.Remove(anomalia);
-                        anomaliasAleatoriasJaUsadas.Add(anomalia);
+                        if (anomaliasAleatoriasDisponiveis.Contains(anomalia))
+                        {
+                            anomaliasAleatoriasDisponiveis.Remove(anomalia);
+                            anomaliasAleatoriasJaUsadas.Add(anomalia);
+                        }
                     }
                     anomalia.ResetarIdentificacao();
                 }
@@ -88,14 +86,12 @@ public class AnomalyManager : MonoBehaviour
             voltaAtual++;
             ExecutarEventosDaVolta();
             SelecionarNovasAnomaliasParaVolta();
-
-            AtualizarContadorAnomalias(); // <-- 4. CHAMAR A FUNÇÃO AQUI
+            AtualizarContadorAnomalias();
         }
         else
         {
             Debug.LogWarning("Nem todas as anomalias foram encontradas! Reiniciando a Volta " + voltaAtual + ".");
         }
-
         ExibirAnomaliasRestantes();
         if (gatilhoDeVolta != null) gatilhoDeVolta.ResetarGatilho();
     }
@@ -105,7 +101,8 @@ public class AnomalyManager : MonoBehaviour
         switch (voltaAtual)
         {
             case 2:
-                Debug.Log("INICIANDO EVENTOS DA VOLTA 2.");
+                Debug.Log("INICIANDO EVENTOS DA VOLTA 2. Efeitos de medo ativados.");
+                if (ambientSoundManager != null) ambientSoundManager.AtivarSistemaDeMedoCompleto();
                 if (containerDeLuzes != null) StartCoroutine(PiscarLuzesCoroutine());
                 if (paredeDestino != null) paredeDestino.SetActive(false);
                 if (textosDoTutorial != null) textosDoTutorial.SetActive(true);
@@ -138,24 +135,31 @@ public class AnomalyManager : MonoBehaviour
     {
         anomaliasEncontradasNestaVolta = 0;
         anomaliasSelecionadasParaEstaVolta.Clear();
-
         if (voltaAtual == 2)
         {
             anomaliasSelecionadasParaEstaVolta.AddRange(anomaliasFixas);
         }
         else if (voltaAtual > 2)
         {
-            int index = voltaAtual - 3;
-            if (index < quantidadeAnomaliasPorVolta.Length)
+            int index = Mathf.Min(voltaAtual - 3, quantidadeAnomaliasPorVolta.Length - 1);
+            int quantidadeParaAtivar = quantidadeAnomaliasPorVolta[index];
+            if (anomaliasAleatoriasDisponiveis.Count < quantidadeParaAtivar)
             {
-                int quantidadeParaAtivar = quantidadeAnomaliasPorVolta[index];
-                var anomaliasEmbaralhadas = anomaliasAleatoriasDisponiveis.OrderBy(a => Random.value).ToList();
-                for (int i = 0; i < quantidadeParaAtivar && i < anomaliasEmbaralhadas.Count; i++)
-                {
-                    anomaliasSelecionadasParaEstaVolta.Add(anomaliasEmbaralhadas[i]);
-                }
+                ReabastecerAnomaliasAleatorias();
+            }
+            var anomaliasEmbaralhadas = anomaliasAleatoriasDisponiveis.OrderBy(a => Random.value).ToList();
+            for (int i = 0; i < quantidadeParaAtivar && i < anomaliasEmbaralhadas.Count; i++)
+            {
+                anomaliasSelecionadasParaEstaVolta.Add(anomaliasEmbaralhadas[i]);
             }
         }
+    }
+
+    void ReabastecerAnomaliasAleatorias()
+    {
+        Debug.Log("Fim do conjunto de anomalias aleatórias. Reabastecendo e reembaralhando...");
+        anomaliasAleatoriasDisponiveis.AddRange(anomaliasAleatoriasJaUsadas);
+        anomaliasAleatoriasJaUsadas.Clear();
     }
 
     void ExibirAnomaliasRestantes()
@@ -163,7 +167,6 @@ public class AnomalyManager : MonoBehaviour
         foreach (var anomalia in anomaliasFixas) anomalia.DesativarAnomalia();
         foreach (var anomalia in anomaliasAleatoriasDisponiveis) anomalia.DesativarAnomalia();
         foreach (var anomalia in anomaliasAleatoriasJaUsadas) anomalia.DesativarAnomalia();
-
         int anomaliasAtivasCount = 0;
         foreach (var anomalia in anomaliasSelecionadasParaEstaVolta)
         {
@@ -191,21 +194,17 @@ public class AnomalyManager : MonoBehaviour
     {
         anomaliasEncontradasNestaVolta++;
         Debug.Log("Anomalia encontrada! Progresso: " + anomaliasEncontradasNestaVolta + "/" + anomaliasSelecionadasParaEstaVolta.Count);
-
-        AtualizarContadorAnomalias(); // <-- 4. CHAMAR A FUNÇÃO AQUI
+        AtualizarContadorAnomalias();
     }
 
-    // ▼▼▼ 3. ADICIONAR ESTA FUNÇÃO INTEIRA ▼▼▼
     void AtualizarContadorAnomalias()
     {
-        if (textoAnomalias == null) return; // Proteção para não dar erro
-
-        // Se for a volta 1 ou se não houver anomalias, esconde o texto
+        if (textoAnomalias == null) return;
         if (voltaAtual <= 1 || anomaliasSelecionadasParaEstaVolta.Count == 0)
         {
             textoAnomalias.gameObject.SetActive(false);
         }
-        else // Caso contrário, exibe e atualiza
+        else
         {
             textoAnomalias.gameObject.SetActive(true);
             textoAnomalias.text = $"Anomalias: {anomaliasEncontradasNestaVolta} / {anomaliasSelecionadasParaEstaVolta.Count}";
