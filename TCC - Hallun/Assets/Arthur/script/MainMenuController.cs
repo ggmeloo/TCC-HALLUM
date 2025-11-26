@@ -1,8 +1,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI; // Necessário para Image
+using UnityEngine.UI;
 using UnityEngine.Video;
-using TMPro; // Mantenho aqui caso queira usar texto no futuro, mas é opcional
+using TMPro;
 using System.Collections;
 
 public class MainMenuController : MonoBehaviour
@@ -16,20 +16,31 @@ public class MainMenuController : MonoBehaviour
     public RawImage telaDoVideo;
     public VideoPlayer videoPlayer;
 
-    [Header("Tela de Carregamento (Visual)")]
+    [Header("Tela de Carregamento (Barra/Imagem)")]
     public GameObject loadingPanel;
 
-    // MUDANÇA AQUI: Trocamos Slider por Image
-    [Tooltip("Arraste aqui a IMAGEM que está configurada como 'Filled'")]
-    public Image imagemDeCarregamento;
+    [Tooltip("A imagem PEQUENA que vai se preenchendo (Filled)")]
+    public Image imagemDeProgresso;
 
-    // Deixei o texto opcional, caso queira remover basta não arrastar nada
+    [Tooltip("Texto de porcentagem (Opcional)")]
     public TextMeshProUGUI loadingText;
 
-    public string nomeDaCenaDoJogo = "GameScene";
+    [Header("Slideshow de Fundo")]
+    [Tooltip("A imagem GRANDE que serve de fundo para a tela de loading")]
+    public Image imagemDeFundoLoading;
 
-    [Header("Ajustes de Tempo")]
-    public float tempoMinimoDeCarregamento = 4.0f;
+    [Tooltip("Lista de imagens que vão passar no fundo")]
+    public Sprite[] imagensDoSlideshow;
+
+    [Tooltip("Tempo (em segundos) que a imagem fica parada totalmente visível")]
+    public float tempoPorImagem = 3.0f;
+
+    [Tooltip("Tempo (em segundos) que leva para a imagem aparecer/desaparecer")]
+    public float tempoDeTransicao = 1.0f;
+
+    [Header("Configuração Geral")]
+    public string nomeDaCenaDoJogo = "GameScene";
+    public float tempoMinimoDeCarregamento = 5.0f;
 
     private bool anyKeyPressed = false;
     private bool videoTerminou = false;
@@ -77,6 +88,7 @@ public class MainMenuController : MonoBehaviour
         telaDoVideo.gameObject.SetActive(true);
         videoPlayer.isLooping = false;
         videoTerminou = false;
+
         videoPlayer.loopPointReached += QuandoOVideoAcabar;
         videoPlayer.Play();
 
@@ -87,6 +99,7 @@ public class MainMenuController : MonoBehaviour
 
         videoPlayer.loopPointReached -= QuandoOVideoAcabar;
         telaDoVideo.gameObject.SetActive(false);
+
         StartCoroutine(CarregarCenaComTempoMinimo());
     }
 
@@ -98,9 +111,9 @@ public class MainMenuController : MonoBehaviour
     IEnumerator CarregarCenaComTempoMinimo()
     {
         loadingPanel.SetActive(true);
+        if (imagemDeProgresso) imagemDeProgresso.fillAmount = 0f;
 
-        // Garante que a imagem comece vazia
-        if (imagemDeCarregamento) imagemDeCarregamento.fillAmount = 0f;
+        Coroutine slideshow = StartCoroutine(RodarSlideshowDeFundo());
 
         AsyncOperation operacao = SceneManager.LoadSceneAsync(nomeDaCenaDoJogo);
         operacao.allowSceneActivation = false;
@@ -115,22 +128,18 @@ public class MainMenuController : MonoBehaviour
             float progressoTempo = Mathf.Clamp01(tempoDecorrido / tempoMinimoDeCarregamento);
             float progressoFinal = Mathf.Min(progressoReal, progressoTempo);
 
-            // MUDANÇA AQUI: Atualiza o preenchimento da imagem
-            if (imagemDeCarregamento != null)
-            {
-                imagemDeCarregamento.fillAmount = progressoFinal;
-            }
+            if (imagemDeProgresso != null)
+                imagemDeProgresso.fillAmount = progressoFinal;
 
-            // Se ainda tiver o texto, atualiza ele, senão ignora
             if (loadingText != null)
-            {
                 loadingText.text = (progressoFinal * 100).ToString("F0") + "%";
-            }
 
             if (operacao.progress >= 0.9f && tempoDecorrido >= tempoMinimoDeCarregamento)
             {
-                if (imagemDeCarregamento) imagemDeCarregamento.fillAmount = 1f;
+                if (imagemDeProgresso) imagemDeProgresso.fillAmount = 1f;
                 if (loadingText) loadingText.text = "100%";
+
+                StopCoroutine(slideshow);
 
                 yield return new WaitForSeconds(0.5f);
                 operacao.allowSceneActivation = true;
@@ -138,6 +147,67 @@ public class MainMenuController : MonoBehaviour
 
             yield return null;
         }
+    }
+
+    // --- NOVA LÓGICA DE SLIDESHOW COM FADE ---
+    IEnumerator RodarSlideshowDeFundo()
+    {
+        if (imagemDeFundoLoading == null || imagensDoSlideshow == null || imagensDoSlideshow.Length == 0)
+        {
+            yield break;
+        }
+
+        int index = 0;
+
+        // Garante que a imagem comece invisível (Alpha 0)
+        Color cor = imagemDeFundoLoading.color;
+        cor.a = 0f;
+        imagemDeFundoLoading.color = cor;
+
+        while (true)
+        {
+            // 1. Troca a imagem (enquanto está invisível)
+            imagemDeFundoLoading.sprite = imagensDoSlideshow[index];
+
+            // 2. Faz o Fade In (Aparece)
+            yield return StartCoroutine(FadeImagem(0f, 1f));
+
+            // 3. Espera o tempo da imagem visível
+            yield return new WaitForSeconds(tempoPorImagem);
+
+            // 4. Faz o Fade Out (Desaparece)
+            yield return StartCoroutine(FadeImagem(1f, 0f));
+
+            // 5. Prepara o índice da próxima imagem
+            index++;
+            if (index >= imagensDoSlideshow.Length)
+            {
+                index = 0;
+            }
+        }
+    }
+
+    // Função auxiliar que faz a animação de transparência
+    IEnumerator FadeImagem(float alphaInicial, float alphaFinal)
+    {
+        float tempoPassado = 0f;
+        Color corAtual = imagemDeFundoLoading.color;
+
+        while (tempoPassado < tempoDeTransicao)
+        {
+            tempoPassado += Time.deltaTime;
+            // Lerp faz a transição suave matemática entre os dois valores
+            float novoAlpha = Mathf.Lerp(alphaInicial, alphaFinal, tempoPassado / tempoDeTransicao);
+
+            corAtual.a = novoAlpha;
+            imagemDeFundoLoading.color = corAtual;
+
+            yield return null;
+        }
+
+        // Garante que chegue no valor final exato no fim do loop
+        corAtual.a = alphaFinal;
+        imagemDeFundoLoading.color = corAtual;
     }
 
     public void OpenSettings()
