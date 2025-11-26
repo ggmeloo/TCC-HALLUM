@@ -1,45 +1,37 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class ControlePaginasTutorial : MonoBehaviour
 {
+    // --- NOVA VARIÁVEL AQUI ---
+    [Header("Referência de Retorno")]
+    [Tooltip("Arraste o objeto 'Papeis_Tutorial' que tem o script de interação para cá.")]
+    public PapeisInterativosTutorial scriptDosPapeis; // Referência ao outro script
+
+    [Header("Configuração das Páginas")]
     public List<GameObject> paginas;
-    private int paginaAtual = 0;
+    [Header("Configuração dos Botões")]
+    public Button botaoProximo;
+    public Button botaoAnterior;
 
-    void OnEnable()
-    {
-        paginaAtual = 0;
-        AtualizarVisibilidadePaginas();
-    }
-
-    public void ProximaPagina()
-    {
-        if (paginaAtual < paginas.Count - 1)
-        {
-            paginaAtual++;
-            AtualizarVisibilidadePaginas();
-        }
-    }
-
-    public void PaginaAnterior()
-    {
-        if (paginaAtual > 0)
-        {
-            paginaAtual--;
-            AtualizarVisibilidadePaginas();
-        }
-    }
-
-    private void AtualizarVisibilidadePaginas()
-    {
-        for (int i = 0; i < paginas.Count; i++)
-        {
-            paginas[i].SetActive(i == paginaAtual);
-        }
-    }
+    // ... (o resto do script continua o mesmo: OnEnable, AcaoBotaoPrincipal, etc.) ...
+    // ...
 
     public void FecharTutorial()
     {
-        gameObject.transform.parent.gameObject.SetActive(false); // Desativa o Canvas pai
+        // Esconde o cursor e trava a tela
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
+
+        // Desativa o Canvas do tutorial
+        gameObject.transform.parent.gameObject.SetActive(false);
+
+        // --- AVISO DE RETORNO ---
+        // Se a referência existir, chama a função para resetar a interação
+        if (scriptDosPapeis != null)
+        {
+            scriptDosPapeis.ResetarInteracao();
+        }
     }
 }

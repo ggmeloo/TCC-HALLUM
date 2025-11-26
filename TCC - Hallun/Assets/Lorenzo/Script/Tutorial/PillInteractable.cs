@@ -1,10 +1,11 @@
 using UnityEngine;
 
+// Lembre-se, este script deve estar no seu objeto "molde" da pílula (Pill Template).
 public class PillInteractable : MonoBehaviour
 {
     [Header("Configuração da Interação")]
     [Tooltip("Arraste o Canvas com o texto 'Pressione E' para este campo.")]
-    public GameObject interactionCanvas; // O Canvas que mostra a tecla
+    public GameObject interactionCanvas;
 
     [Tooltip("A tecla que o jogador deve pressionar para coletar.")]
     public KeyCode interactionKey = KeyCode.E;
@@ -62,6 +63,7 @@ public class PillInteractable : MonoBehaviour
         }
     }
 
+    // A função Update modificada
     void Update()
     {
         // Esta verificação acontece a todo frame:
@@ -70,12 +72,17 @@ public class PillInteractable : MonoBehaviour
         // 3. A referência ao script de sanidade é válida?
         if (playerIsNearby && Input.GetKeyDown(interactionKey) && playerSanityController != null)
         {
-            // Se todas as condições são verdadeiras, chama a função de recuperar sanidade.
+            // Dá a sanidade para o jogador.
             playerSanityController.RecuperarSanidade();
 
-            // A pílula agora simplesmente se destrói, pois a responsabilidade de criar
-            // uma nova leva é do BatchPillSpawner, que é chamado por outro evento do jogo.
+            // Avisa ao spawner que uma pílula foi coletada.
+            if (BatchPillSpawner.instance != null)
+            {
+                BatchPillSpawner.instance.PillWasCollected();
+            }
+
+            // Destrói o objeto da pílula, pois ela foi coletada.
             Destroy(gameObject);
         }
     }
-}
+} // <--- Esta chave final é crucial. Ela fecha a classe "PillInteractable".

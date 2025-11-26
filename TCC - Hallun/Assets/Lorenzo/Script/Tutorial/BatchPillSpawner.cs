@@ -4,60 +4,43 @@ using System.Linq;
 
 public class BatchPillSpawner : MonoBehaviour
 {
-    [Header("Configurações de Spawn")]
+    [Header("Configuração de Spawn")]
     [Tooltip("Arraste o GameObject da sua pílula 'molde' que está na cena para este campo.")]
     public GameObject pillTemplateObject;
 
-    [Tooltip("TODOS os GameObjects que marcam os locais possíveis de spawn.")]
+    [Tooltip("Todos os GameObjects que marcam os locais possíveis de spawn.")]
     public List<Transform> spawnPoints;
 
     [Tooltip("Quantas pílulas devem aparecer a cada rodada?")]
-    [Range(1, 50)]
     public int numberOfPillsToSpawn = 3;
 
     public static BatchPillSpawner instance;
 
-    private List<GameObject> activePills = new List<GameObject>();
+    // --- NOVAS VARIÁVEIS ---
+    private int pillsRemainingInBatch; // Contador de pílulas restantes
     private List<Transform> lastUsedSpawnPoints = new List<Transform>();
 
     private void Awake()
     {
-        if (instance == null)
-        {
-            instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        if (instance == null) instance = this;
+        else Destroy(gameObject);
     }
 
     void Start()
     {
-        // Esta verificação é importante para evitar erros durante o jogo.
         if (pillTemplateObject == null || spawnPoints.Count == 0)
         {
-            Debug.LogError("ERRO: O Objeto Molde (Pill Template) ou a lista de Spawn Points não foi configurada no BatchPillSpawner!");
+            Debug.LogError("ERRO: O Objeto Molde (Pill Template) ou a lista de Spawn Points não foi configurada!");
             return;
         }
-
-        // Desativa o molde original para que ele sirva apenas como template.
         pillTemplateObject.SetActive(false);
-
-        // O spawner espera o comando do SanidadeController. Nenhuma pílula é criada aqui.
+        // O spawner começa esperando o comando.
     }
 
-    // Esta é a função que o SanidadeController chama para iniciar o spawn.
+    // A função principal para criar um novo lote
     public void SpawnNewBatch()
     {
-        foreach (GameObject pill in activePills)
-        {
-            if (pill != null)
-            {
-                Destroy(pill);
-            }
-        }
-        activePills.Clear();
+        Debug.Log("Criando um novo lote de pílulas...");
 
         List<Transform> availablePoints = spawnPoints.Except(lastUsedSpawnPoints).ToList();
         if (availablePoints.Count < numberOfPillsToSpawn)
@@ -69,11 +52,8 @@ public class BatchPillSpawner : MonoBehaviour
         for (int i = 0; i < numberOfPillsToSpawn; i++)
         {
             if (availablePoints.Count == 0) break;
-
             int randomIndex = Random.Range(0, availablePoints.Count);
-            Transform chosenPoint = availablePoints[randomIndex];
-
-            chosenPointsThisRound.Add(chosenPoint);
+            chosenPointsThisRound.Add(availablePoints[randomIndex]);
             availablePoints.RemoveAt(randomIndex);
         }
 
@@ -81,10 +61,31 @@ public class BatchPillSpawner : MonoBehaviour
         {
             GameObject newPill = Instantiate(pillTemplateObject, point.position, point.rotation);
             newPill.SetActive(true);
-            activePills.Add(newPill);
         }
 
+        // --- LÓGICA DE CONTAGEM ---
+        // Define o número de pílulas que precisam ser coletadas nesta rodada
+        pillsRemainingInBatch = chosenPointsThisRound.Count;
+
         lastUsedSpawnPoints = new List<Transform>(chosenPointsThisRound);
-        Debug.Log($"{chosenPointsThisRound.Count} pílulas de gameplay foram criadas.");
+    }
+
+    // --- NOVA FUNÇÃO CHAMADA PELA PÍLULA ---
+    public void PillWasCollected()
+    {
+        // Diminui o contador
+        pillsRemainingInBatch--;
+
+        Debug.Log($"Pílula coletada! Restam {pillsRemainingInBatch} neste lote.");
+
+        // Se o contador chegar a zero, é hora de criar um novo lote!
+        if (pillsRemainingInBatch <= 0)
+        {
+            // Opcional: Adicionar um pequeno delay para a próxima rodada
+            // Invoke("SpawnNewBatch", 2f); // Espera 2 segundos antes de criar o próximo lote
+
+            // Ou criar imediatamente:
+            SpawnNewBatch();
+        }
     }
 }
