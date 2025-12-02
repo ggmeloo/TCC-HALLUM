@@ -1454,7 +1454,8 @@ MonoBehaviour:
   - {fileID: 1404183043}
   botaoProximo: {fileID: 826317416}
   botaoAnterior: {fileID: 1633754141}
-  nomeCenaPrincipal: Tutotial
+  textoBotaoProximo: {fileID: 0}
+  nomeCenaPrincipal: GameScene
 --- !u!4 &1166044039
 Transform:
   m_ObjectHideFlags: 0

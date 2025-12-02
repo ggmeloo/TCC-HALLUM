@@ -38,8 +38,10 @@ public class MainMenuController : MonoBehaviour
     [Tooltip("Tempo (em segundos) que leva para a imagem aparecer/desaparecer")]
     public float tempoDeTransicao = 1.0f;
 
-    [Header("Configuração Geral")]
-    public string nomeDaCenaDoJogo = "GameScene";
+    [Header("Configuração de Destino")]
+    [Tooltip("Coloque aqui o nome da CENA DE TUTORIAL (que vem depois do loading)")]
+    public string nomeDaCenaDeDestino = "TutorialScene";
+
     public float tempoMinimoDeCarregamento = 5.0f;
 
     private bool anyKeyPressed = false;
@@ -86,8 +88,23 @@ public class MainMenuController : MonoBehaviour
     IEnumerator TocarVideoEDepoisCarregar()
     {
         telaDoVideo.gameObject.SetActive(true);
+
+        // --- CORREÇÃO DO VÍDEO PULANDO ---
+        videoPlayer.Stop(); // Garante que parou
+        videoPlayer.frame = 0; // Volta pro começo
         videoPlayer.isLooping = false;
         videoTerminou = false;
+
+        // Prepara o vídeo na memória antes de tocar
+        videoPlayer.Prepare();
+
+        // Espera a Unity carregar o vídeo
+        while (!videoPlayer.isPrepared)
+        {
+            yield return null;
+        }
+
+        telaDoVideo.texture = videoPlayer.texture; // Garante que a imagem apareça
 
         videoPlayer.loopPointReached += QuandoOVideoAcabar;
         videoPlayer.Play();
@@ -115,7 +132,8 @@ public class MainMenuController : MonoBehaviour
 
         Coroutine slideshow = StartCoroutine(RodarSlideshowDeFundo());
 
-        AsyncOperation operacao = SceneManager.LoadSceneAsync(nomeDaCenaDoJogo);
+        // Carrega a cena definida (no seu caso, o TUTORIAL)
+        AsyncOperation operacao = SceneManager.LoadSceneAsync(nomeDaCenaDeDestino);
         operacao.allowSceneActivation = false;
 
         float tempoDecorrido = 0f;
@@ -149,7 +167,6 @@ public class MainMenuController : MonoBehaviour
         }
     }
 
-    // --- NOVA LÓGICA DE SLIDESHOW COM FADE ---
     IEnumerator RodarSlideshowDeFundo()
     {
         if (imagemDeFundoLoading == null || imagensDoSlideshow == null || imagensDoSlideshow.Length == 0)
@@ -159,35 +176,23 @@ public class MainMenuController : MonoBehaviour
 
         int index = 0;
 
-        // Garante que a imagem comece invisível (Alpha 0)
+        // Setup inicial transparente
         Color cor = imagemDeFundoLoading.color;
         cor.a = 0f;
         imagemDeFundoLoading.color = cor;
 
         while (true)
         {
-            // 1. Troca a imagem (enquanto está invisível)
             imagemDeFundoLoading.sprite = imagensDoSlideshow[index];
-
-            // 2. Faz o Fade In (Aparece)
             yield return StartCoroutine(FadeImagem(0f, 1f));
-
-            // 3. Espera o tempo da imagem visível
             yield return new WaitForSeconds(tempoPorImagem);
-
-            // 4. Faz o Fade Out (Desaparece)
             yield return StartCoroutine(FadeImagem(1f, 0f));
 
-            // 5. Prepara o índice da próxima imagem
             index++;
-            if (index >= imagensDoSlideshow.Length)
-            {
-                index = 0;
-            }
+            if (index >= imagensDoSlideshow.Length) index = 0;
         }
     }
 
-    // Função auxiliar que faz a animação de transparência
     IEnumerator FadeImagem(float alphaInicial, float alphaFinal)
     {
         float tempoPassado = 0f;
@@ -196,16 +201,11 @@ public class MainMenuController : MonoBehaviour
         while (tempoPassado < tempoDeTransicao)
         {
             tempoPassado += Time.deltaTime;
-            // Lerp faz a transição suave matemática entre os dois valores
             float novoAlpha = Mathf.Lerp(alphaInicial, alphaFinal, tempoPassado / tempoDeTransicao);
-
             corAtual.a = novoAlpha;
             imagemDeFundoLoading.color = corAtual;
-
             yield return null;
         }
-
-        // Garante que chegue no valor final exato no fim do loop
         corAtual.a = alphaFinal;
         imagemDeFundoLoading.color = corAtual;
     }

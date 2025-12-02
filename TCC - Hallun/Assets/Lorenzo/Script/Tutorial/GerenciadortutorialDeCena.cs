@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.SceneManagement; // Essencial para carregar a cena do jogo
+using UnityEngine.SceneManagement;
+using TMPro; // Adicionei suporte a TextMeshPro caso queira mudar o texto do botão
 
 public class GerenciadorTutorialDeCena : MonoBehaviour
 {
@@ -10,47 +12,68 @@ public class GerenciadorTutorialDeCena : MonoBehaviour
     public List<GameObject> paginas;
 
     [Header("Configuração dos Botões")]
-    [Tooltip("Arraste o botão de avançar para cá.")]
     public Button botaoProximo;
-    [Tooltip("Arraste o botão de voltar para cá.")]
     public Button botaoAnterior;
+
+    [Tooltip("Opcional: Arraste o texto do botão 'Próximo' para mudar para 'JOGAR' no final")]
+    public TextMeshProUGUI textoBotaoProximo;
 
     [Header("Cena do Jogo")]
     [Tooltip("Digite o nome EXATO da sua cena de gameplay principal.")]
-    public string nomeCenaPrincipal;
+    public string nomeCenaPrincipal = "GameScene";
 
     private int paginaAtual = 0;
+    private AsyncOperation operacaoDeCarregamento; // Variável para controlar o carregamento escondido
 
-    // Start é chamado quando a cena começa
     void Start()
     {
-        // Garante que o cursor do mouse esteja visível e livre
+        // 1. Configura cursor
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
-        // Inicia na primeira página
+        // 2. Inicia na primeira página
         paginaAtual = 0;
         AtualizarVisibilidade();
+
+        // 3. COMEÇA A CARREGAR O JOGO NO FUNDO (Essa é a mágica)
+        StartCoroutine(CarregarJogoEmSegundoPlano());
     }
 
-    // Função que será chamada pelo botão "Próximo"
+    // Carrega o jogo mas impede que ele abra sozinho
+    IEnumerator CarregarJogoEmSegundoPlano()
+    {
+        if (string.IsNullOrEmpty(nomeCenaPrincipal))
+        {
+            Debug.LogError("Nome da cena principal não definido!");
+            yield break;
+        }
+
+        // Começa a carregar
+        operacaoDeCarregamento = SceneManager.LoadSceneAsync(nomeCenaPrincipal);
+
+        // IMPEDE que a cena mude assim que terminar de carregar
+        operacaoDeCarregamento.allowSceneActivation = false;
+
+        Debug.Log("Carregando jogo em segundo plano...");
+
+        yield return null;
+    }
+
     public void AcaoBotaoPrincipal()
     {
-        // Se NÃO estamos na última página...
+        // Se NÃO estamos na última página, avança
         if (paginaAtual < paginas.Count - 1)
         {
-            // ...avança para a próxima página.
             paginaAtual++;
             AtualizarVisibilidade();
         }
         else
         {
-            // ...SE ESTAMOS na última página, carrega a cena principal do jogo.
-            IniciarJogo();
+            // SE ESTAMOS na última página, libera a cena que já está carregada
+            FinalizarTutorialEEntrar();
         }
     }
 
-    // Função que será chamada pelo botão "Anterior"
     public void PaginaAnterior()
     {
         if (paginaAtual > 0)
@@ -68,23 +91,39 @@ public class GerenciadorTutorialDeCena : MonoBehaviour
             paginas[i].SetActive(i == paginaAtual);
         }
 
-        // Ativa/Desativa o botão "Anterior"
-        if (botaoAnterior != null) botaoAnterior.interactable = (paginaAtual > 0);
+        // Configura Botão Anterior
+        if (botaoAnterior != null)
+            botaoAnterior.interactable = (paginaAtual > 0);
 
-        // O botão "Próximo" está sempre ativo, mas sua função muda na última página
-        if (botaoProximo != null) botaoProximo.interactable = true;
+        // Configura Botão Próximo / Jogar
+        if (botaoProximo != null)
+        {
+            // Se chegou na última página
+            if (paginaAtual == paginas.Count - 1)
+            {
+                // Muda o texto para "JOGAR" ou "CONCLUIR"
+                if (textoBotaoProximo != null) textoBotaoProximo.text = "JOGAR";
+            }
+            else
+            {
+                // Se não, mantém "PRÓXIMO"
+                if (textoBotaoProximo != null) textoBotaoProximo.text = "PRÓXIMO";
+            }
+        }
     }
 
-    private void IniciarJogo()
+    private void FinalizarTutorialEEntrar()
     {
-        // Verifica se um nome de cena foi fornecido
-        if (!string.IsNullOrEmpty(nomeCenaPrincipal))
+        // Se o carregamento já começou
+        if (operacaoDeCarregamento != null)
         {
-            SceneManager.LoadScene(nomeCenaPrincipal);
+            // Libera a trava e entra no jogo
+            operacaoDeCarregamento.allowSceneActivation = true;
         }
         else
         {
-            Debug.LogError("O 'Nome Cena Principal' não foi definido no Inspector!");
+            // Fallback caso o carregamento assíncrono tenha falhado
+            SceneManager.LoadScene(nomeCenaPrincipal);
         }
     }
 }

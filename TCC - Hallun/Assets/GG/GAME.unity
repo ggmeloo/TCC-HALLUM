@@ -20383,10 +20383,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5715fcf30cf8ed143a360a0c06ef416a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  alturaLevitacaoInicial: 0.5
-  distanciaDoPlayer: 1.5
-  duracaoTotalAnimacao: 2.5
-  canvasDoTutorial: {fileID: 1552563683}
 --- !u!114 &991197996
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20399,10 +20395,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5715fcf30cf8ed143a360a0c06ef416a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  alturaLevitacaoInicial: 0.5
-  distanciaDoPlayer: 1.5
-  duracaoTotalAnimacao: 2.5
-  canvasDoTutorial: {fileID: 1552563683}
 --- !u!1 &995091371
 GameObject:
   m_ObjectHideFlags: 0
@@ -27209,7 +27201,7 @@ Rigidbody:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_ImplicitCom: 1
+  m_ImplicitCom: 0
   m_ImplicitTensor: 1
   m_UseGravity: 1
   m_IsKinematic: 0
@@ -29730,7 +29722,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79c79269b4d4646429b38519f5d51b90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Parede: {fileID: 1470107330}
 --- !u!4 &1441785357 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8829451551789304537, guid: 8206b722d11501a449d6a278cca2adfa, type: 3}
@@ -32225,7 +32216,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b219c8e8a9e5b24479cc9f45e391fe29, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  scriptDosPapeis: {fileID: 0}
   paginas: []
+  botaoProximo: {fileID: 0}
+  botaoAnterior: {fileID: 0}
 --- !u!114 &1552563685
 MonoBehaviour:
   m_ObjectHideFlags: 0
